@@ -116,3 +116,40 @@ create policy "sorties_update" on sorties for update to authenticated using (tru
 -- 7. Exemple d'import de membres (adapter puis decommenter, ou saisir dans l'app)
 -- insert into membres (prenom, nom, date_naissance, niveau, telephone, contact_urgence) values
 -- ('Prenom','Nom','1980-01-01','Initiateur','06 00 00 00 00','Personne a prevenir 06 00 00 00 00');
+
+-- 8. Reglages des alertes automatiques + canaux d'alerte (onglet admin "Alertes")
+create table if not exists reglages (
+  id int primary key,
+  alerte_email boolean not null default true,
+  alerte_whatsapp boolean not null default true,
+  emails_alerte text default ''            -- destinataires des emails d'alerte, separes par des virgules
+);
+
+insert into reglages (id) values (1) on conflict (id) do nothing;
+
+alter table reglages enable row level security;
+create policy "reglages_select" on reglages for select to authenticated using (true);
+create policy "reglages_update" on reglages for update to authenticated using (is_admin());
+
+-- Canaux d'alerte : sites et numeros pour declencher les secours (modifiables dans l'app).
+-- Valeurs par defaut pour la France : adaptez-les a votre pays dans l'onglet Alertes.
+create table if not exists canaux_alerte (
+  id uuid primary key default gen_random_uuid(),
+  nom text not null,
+  valeur text not null,                    -- numero de telephone, ou adresse https://...
+  created_at timestamptz not null default now()
+);
+
+insert into canaux_alerte (nom, valeur)
+select v.n, v.va from (values
+  ('SSF Alert', 'https://ssfalert.fr'),
+  ('Numéro d''urgence européen', '112'),
+  ('Spéléo Secours Français', '0800 121 123')
+) as v(n, va)
+where not exists (select 1 from canaux_alerte);
+
+alter table canaux_alerte enable row level security;
+create policy "canaux_select" on canaux_alerte for select to authenticated using (true);
+create policy "canaux_insert" on canaux_alerte for insert to authenticated with check (is_admin());
+create policy "canaux_update" on canaux_alerte for update to authenticated using (is_admin());
+create policy "canaux_delete" on canaux_alerte for delete to authenticated using (is_admin());

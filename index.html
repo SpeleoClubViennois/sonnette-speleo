@@ -58,7 +58,7 @@ details pre{white-space:pre-wrap;font:inherit;background:var(--card);border:1px 
 .count.late{color:var(--al)}
 footer{color:var(--mut);font-size:.8rem;text-align:center;margin-top:24px}
 input.tph{cursor:pointer;caret-color:transparent}
-.role-membre #tabBtn-membres,.role-membre #tabBtn-vehicules{display:none}
+.role-membre #tabBtn-membres,.role-membre #tabBtn-vehicules,.role-membre #tabBtn-alertes{display:none}
 .role-membre #tab-grottes section:first-of-type{display:none}
 .role-membre #glist button{display:none}
 #tpOv{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:60}
@@ -97,6 +97,7 @@ input.tph{cursor:pointer;caret-color:transparent}
 <button id="tabBtn-membres">Membres</button>
 <button id="tabBtn-grottes">Grottes</button>
 <button id="tabBtn-vehicules">Véhicules</button>
+<button id="tabBtn-alertes">Alertes</button>
 </nav>
 
 <!-- ============ ONGLET NOUVELLE SORTIE ============ -->
@@ -170,7 +171,7 @@ input.tph{cursor:pointer;caret-color:transparent}
 <div id="tab-suivi" class="hid">
 <section>
 <h2>Sorties en cours et à venir</h2>
-<p class="s">La sonnette surveille cette page. Si l'heure de secours est dépassée sans nouvelle de l'équipe : déclarer l'alerte sur <a href="https://ssfalert.fr" target="_blank">ssfalert.fr</a> (Spéléo Secours Français) ou appeler le 112, en lisant le message de la sortie.</p>
+<p class="s" id="suiviIntro">La sonnette surveille cette page. Si l'heure de secours est dépassée sans nouvelle de l'équipe, déclarer l'alerte en lisant le message de la sortie.</p>
 <div class="r" style="margin:0 0 12px"><button id="reload">Actualiser</button><span class="s" id="lastRefresh" style="margin:0"></span></div>
 <div id="actives"></div>
 <h2 style="margin-top:20px">Dernières sorties terminées</h2>
@@ -226,6 +227,35 @@ input.tph{cursor:pointer;caret-color:transparent}
 <section>
 <h2>Grottes du club</h2>
 <div id="glist"><p class="s">Chargement…</p></div>
+</section>
+</div>
+
+<!-- ============ ONGLET ALERTES (admin) ============ -->
+<div id="tab-alertes" class="hid">
+<section>
+<h2>Alertes automatiques</h2>
+<p class="s">Toutes les 5 minutes, le robot vérifie les sorties « sous terre » dont l'heure de secours est dépassée, et envoie une seule alerte par sortie sur les canaux activés ci-dessous.</p>
+<label class="ck"><input type="checkbox" id="alEmail">Alerte par email</label>
+<div style="margin:6px 0 16px 26px"><label for="alDest">Destinataires email (séparés par des virgules)</label><input id="alDest" placeholder="prenom@exemple.fr, autre@exemple.fr"></div>
+<label class="ck"><input type="checkbox" id="alWa">Alerte WhatsApp (CallMeBot)</label>
+<p class="s" style="margin:4px 0 16px 26px">Destinataires WhatsApp : les membres dont la fiche contient une clé CallMeBot (onglet Membres).</p>
+<div class="r"><button class="p" id="alSave">Enregistrer</button><span id="alOk" class="s" style="margin:0" aria-live="polite"></span></div>
+</section>
+<section>
+<h2 id="cfTitle">Ajouter un canal d'alerte</h2>
+<div class="g">
+<div><label for="canom">Nom</label><input id="canom" placeholder="SSF Alert"></div>
+<div><label for="caval">Numéro ou adresse web</label><input id="caval" placeholder="https://ssfalert.fr ou 0800 121 123"></div>
+</div>
+<div class="r">
+<button class="p" id="addC">Ajouter le canal</button>
+<button id="cancelEditC" class="hid">Annuler la modification</button>
+</div>
+</section>
+<section>
+<h2>Canaux d'alerte</h2>
+<p class="s">Les sites et numéros à utiliser pour déclencher les secours. Ils apparaissent dans la bannière d'alerte du Suivi, dans le message de sonnette et dans les alertes automatiques — dans l'ordre de cette liste.</p>
+<div id="clist"><p class="s">Chargement…</p></div>
 </section>
 </div>
 
@@ -332,7 +362,7 @@ function applyRole() {
   const admin = !!(session && session.role === 'admin');
   document.body.classList.toggle('role-membre', !admin);
   if (!admin) {
-    const cache = ['membres', 'vehicules'];
+    const cache = ['membres', 'vehicules', 'alertes'];
     const cur = TABS.find(t => !$('tab-' + t).classList.contains('hid'));
     if (cache.includes(cur)) showTab('sortie');
   }
@@ -372,18 +402,19 @@ $('gateForm').onsubmit = async ev => {
   saveSession(d, role);
   $('gateCode').value = '';
   $('gate').classList.add('hid');
-  loadMembres(); loadGrottes(); loadVehicules();
+  loadMembres(); loadGrottes(); loadVehicules(); loadCanaux();
 };
 $('logout').onclick = () => { saveSession(null); gate() };
 
 // ---------- Onglets ----------
-const TABS = ['sortie', 'suivi', 'membres', 'grottes', 'vehicules'];
+const TABS = ['sortie', 'suivi', 'membres', 'grottes', 'vehicules', 'alertes'];
 function showTab(name) {
   TABS.forEach(t => {
     $('tab-' + t).classList.toggle('hid', t !== name);
     $('tabBtn-' + t).setAttribute('aria-current', t === name ? 'true' : 'false');
   });
   if (name === 'suivi') loadSorties();
+  if (name === 'alertes') { loadReglages(); loadCanaux() }
 }
 TABS.forEach(t => { $('tabBtn-' + t).onclick = () => showTab(t) });
 
@@ -465,7 +496,7 @@ function gen() {
   if (t.length) o.push(t.join(', ').replace(/^./, c => c.toUpperCase()) + '.');
   const sm = membres.find(z => z.id === $('sq').value);
   if (sm) o.push('Sonnette : ' + sm.prenom + ' ' + sm.nom + (sm.telephone ? ', ' + sm.telephone : '') + '.');
-  if (v('hr')) o.push('Secours à déclencher à ' + hh(v('hr')) + ', uniquement par la sonnette (ssfalert.fr ou 112).');
+  if (v('hr')) o.push('Secours à déclencher à ' + hh(v('hr')) + ', uniquement par la sonnette (' + canauxActifs().map(c => (c.valeur || '').replace(/^https?:\/\//i, '')).join(', ') + ').');
   $('msg').value = o.join('\n\n');
   $('sqWarn').textContent = (sm && sel.has(sm.id)) ? 'Attention : la sonnette fait partie des participants. Elle doit rester en surface.' : '';
   const enc = parts.some(m => m.niveau === 'Initiateur' || m.niveau === 'Moniteur');
@@ -781,7 +812,7 @@ function sortieCard(s) {
     if (now > sd) {
       const al = document.createElement('div');
       al.className = 'alerte';
-      al.innerHTML = '<div class="big">HEURE DE SECOURS DÉPASSÉE de ' + dureeTxt(now - sd) + '</div>1. Essayer de joindre les participants (numéros dans le message ci-dessous).<br>2. Sans nouvelle : déclarer l’alerte sur <a href="https://ssfalert.fr" target="_blank">ssfalert.fr</a>, ou appeler le <a href="tel:112">112</a> / Spéléo Secours Français (<a href="tel:0800121123">0800 121 123</a>) en précisant « accident de spéléologie » — et lire le message de la sortie.';
+      al.innerHTML = '<div class="big">HEURE DE SECOURS DÉPASSÉE de ' + dureeTxt(now - sd) + '</div>1. Essayer de joindre les participants (numéros dans le message ci-dessous).<br>2. Sans nouvelle, déclarer l’alerte : ' + canauxHtml() + ' — préciser « accident de spéléologie » et lire le message de la sortie.';
       c.appendChild(al);
     } else {
       const p = document.createElement('p');
@@ -1101,6 +1132,105 @@ async function loadVehicules() {
   gen();
 }
 
+// ---------- Canaux d'alerte ----------
+let canaux = [], editCId = null;
+const CANAUX_DEFAUT = [
+  { nom: 'SSF Alert', valeur: 'https://ssfalert.fr' },
+  { nom: 'Numéro d’urgence européen', valeur: '112' },
+  { nom: 'Spéléo Secours Français', valeur: '0800 121 123' }
+];
+function canauxActifs() { return canaux.length ? canaux : CANAUX_DEFAUT }
+function escHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])) }
+function canauxHtml() {
+  return canauxActifs().map(c => {
+    const v = (c.valeur || '').trim();
+    if (/^https?:\/\//i.test(v)) return '<a href="' + escHtml(v) + '" target="_blank">' + escHtml(c.nom || v.replace(/^https?:\/\//i, '')) + '</a>';
+    const tel = v.replace(/[^\d+]/g, '');
+    return escHtml(c.nom && c.nom !== v ? c.nom + ' ' : '') + '<a href="tel:' + escHtml(tel) + '">' + escHtml(v) + '</a>';
+  }).join(' · ');
+}
+function majCanauxUI() {
+  $('suiviIntro').innerHTML = 'La sonnette surveille cette page. Si l’heure de secours est dépassée sans nouvelle de l’équipe, déclarer l’alerte : ' + canauxHtml() + ' — en lisant le message de la sortie.';
+}
+function renderCanaux() {
+  const L = $('clist');
+  L.innerHTML = '';
+  if (!canaux.length) { L.innerHTML = '<p class="s">Aucun canal en base : l’app utilise la liste par défaut (SSF Alert, 112, Spéléo Secours).</p>'; return }
+  canaux.forEach(c => {
+    const r = document.createElement('div');
+    r.className = 'm';
+    const s = document.createElement('span');
+    s.textContent = c.nom;
+    const sm = document.createElement('small');
+    sm.textContent = ' ' + c.valeur;
+    s.appendChild(sm);
+    const e = document.createElement('button');
+    e.textContent = 'Modifier';
+    e.onclick = () => {
+      editCId = c.id;
+      $('cfTitle').textContent = 'Modifier ' + c.nom;
+      $('canom').value = c.nom; $('caval').value = c.valeur;
+      $('addC').textContent = 'Enregistrer';
+      $('cancelEditC').classList.remove('hid');
+    };
+    const x = document.createElement('button');
+    x.textContent = 'Supprimer';
+    x.onclick = async () => {
+      if (!confirm('Supprimer le canal ' + c.nom + ' ?')) return;
+      try { await api('canaux_alerte?id=eq.' + c.id, { method: 'DELETE' }); await loadCanaux() }
+      catch (e2) { showErr(e2.message) }
+    };
+    r.append(s, e, x);
+    L.appendChild(r);
+  });
+}
+function resetCForm() {
+  editCId = null;
+  $('cfTitle').textContent = 'Ajouter un canal d’alerte';
+  $('canom').value = ''; $('caval').value = '';
+  $('addC').textContent = 'Ajouter le canal';
+  $('cancelEditC').classList.add('hid');
+}
+$('cancelEditC').onclick = resetCForm;
+$('addC').onclick = async () => {
+  const nom = $('canom').value.trim(), val = $('caval').value.trim();
+  if (!nom || !val) { $('canom').focus(); return }
+  try {
+    if (editCId) await api('canaux_alerte?id=eq.' + editCId, { method: 'PATCH', headers: { 'Prefer': 'return=minimal' }, body: { nom: nom, valeur: val } });
+    else await api('canaux_alerte', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: { nom: nom, valeur: val } });
+    resetCForm();
+    await loadCanaux();
+  } catch (e) { showErr(e.message) }
+};
+async function loadCanaux() {
+  if (!configured() || !session) { majCanauxUI(); return }
+  try { canaux = await api('canaux_alerte?select=*&order=created_at.asc') }
+  catch (e) { canaux = [] }
+  majCanauxUI();
+  renderCanaux();
+  gen();
+}
+
+// ---------- Onglet alertes (admin) ----------
+async function loadReglages() {
+  if (!configured() || !session) return;
+  try {
+    const r = await api('reglages?id=eq.1&select=*');
+    if (r && r[0]) {
+      $('alEmail').checked = !!r[0].alerte_email;
+      $('alWa').checked = !!r[0].alerte_whatsapp;
+      $('alDest').value = r[0].emails_alerte || '';
+    }
+  } catch (e) { showErr(e.message) }
+}
+$('alSave').onclick = async () => {
+  try {
+    await api('reglages?id=eq.1', { method: 'PATCH', headers: { 'Prefer': 'return=minimal' }, body: { alerte_email: $('alEmail').checked, alerte_whatsapp: $('alWa').checked, emails_alerte: $('alDest').value.trim() } });
+    $('alOk').textContent = 'Enregistré.';
+    setTimeout(() => $('alOk').textContent = '', 2500);
+  } catch (e) { showErr(e.message) }
+};
+
 // ---------- Initialisation ----------
 document.querySelectorAll('#tab-sortie input, #tab-sortie select').forEach(e => {
   e.addEventListener('input', () => {
@@ -1114,7 +1244,8 @@ $('dts').value = new Date().toISOString().slice(0, 10);
 try { $('club').value = localStorage.getItem('sq_c') || CONFIG.CLUB } catch (e) { $('club').value = CONFIG.CLUB }
 gate();
 applyRole();
-if (session) { loadMembres(); loadGrottes(); loadVehicules(); }
+majCanauxUI();
+if (session) { loadMembres(); loadGrottes(); loadVehicules(); loadCanaux(); }
 gen();
 </script>
 </body>
