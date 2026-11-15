@@ -1,0 +1,296 @@
+{
+  "name": "Sonnette Speleo - Rappel heure de secours",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "name": "Toutes les 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://VOTRE-PROJET.supabase.co/auth/v1/token?grant_type=password",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "VOTRE_CLE_PUBLISHABLE"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"email\":\"admin@example.org\",\"password\":\"MOT_DE_PASSE_ADMIN_A_REMPLACER\"}",
+        "options": {}
+      },
+      "name": "Connexion Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://VOTRE-PROJET.supabase.co/rest/v1/sorties?statut=eq.sous_terre&alerte_envoyee=is.null&select=*",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "VOTRE_CLE_PUBLISHABLE"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Sorties sous terre",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = DateTime.now().setZone('Europe/Paris');\nconst out = [];\nfor (const item of $input.all()) {\n  const s = item.json;\n  if (!s.heure_secours || !s.date_sortie) continue;\n  let d = DateTime.fromISO(s.date_sortie + 'T' + s.heure_secours, { zone: 'Europe/Paris' });\n  if (s.heure_entree && s.heure_secours < s.heure_entree) d = d.plus({ days: 1 });\n  if (now > d) {\n    s.retard_minutes = Math.round(now.diff(d, 'minutes').minutes);\n    out.push({ json: s });\n  }\n}\nreturn out;"
+      },
+      "name": "Garder les depassees",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "EXPEDITEUR@example.org",
+        "toEmail": "DESTINATAIRE@example.org",
+        "subject": "=ALERTE SPELEO : heure de secours depassee ({{ $json.nom_cavite }})",
+        "emailFormat": "text",
+        "text": "=ALERTE : l'equipe n'a pas signale sa sortie.\n\nSortie : {{ $json.type_cavite }} {{ $json.nom_cavite }} ({{ $json.departement }})\nHeure de secours prevue : {{ $json.heure_secours }} - depassee de {{ $json.retard_minutes }} minutes.\nSonnette : {{ $json.sonnette_nom }} {{ $json.sonnette_tel }}\n\n1. Verifier aupres de la sonnette et des participants (numeros dans le message ci-dessous et sur https://VOTRE-SITE-SONNETTE.example.org).\n2. Sans nouvelle : appeler le 112 ou le Speleo Secours Francais (0800 121 123), preciser \"accident de speleologie\", et lire le message ci-dessous.\n\n----- MESSAGE DE LA SORTIE -----\n\n{{ $json.message }}",
+        "options": {}
+      },
+      "name": "Email d'alerte",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://VOTRE-PROJET.supabase.co/rest/v1/sorties?id=eq.{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "VOTRE_CLE_PUBLISHABLE"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Connexion Supabase').first().json.access_token }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"alerte_envoyee\": \"{{ $now.toISO() }}\"}",
+        "options": {}
+      },
+      "name": "Marquer alertee",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Croise les sorties en depassement avec les membres qui ont une cle CallMeBot\n// (champ \"Cle CallMeBot\" de la fiche membre, rempli par l'admin dans l'app).\nconst sorties = $('Garder les depassees').all().map(i => i.json);\nconst membres = $input.all().map(i => i.json)\n  .filter(m => m.callmebot_key && m.callmebot_key.trim() !== '' && m.telephone);\n\nconst out = [];\nfor (const s of sorties) {\n  const texte = 'ALERTE SPELEO : heure de secours depassee de ' + s.retard_minutes + ' min.\\n'\n    + (s.type_cavite || 'cavite') + ' ' + (s.nom_cavite || '') + (s.departement ? ' (' + s.departement + ')' : '') + '\\n'\n    + 'Sonnette : ' + (s.sonnette_nom || '?') + ' ' + (s.sonnette_tel || '') + '\\n'\n    + (s.gps ? 'GPS entree : ' + s.gps + '\\n' : '')\n    + 'Sans nouvelle de l\\'equipe : appeler le 112 ou le Speleo Secours (0800 121 123), dire \"accident de speleologie\".\\n'\n    + 'Details et message complet : https://VOTRE-SITE-SONNETTE.example.org';\n  for (const m of membres) {\n    let dig = (m.telephone || '').replace(/\\D/g, '');\n    if (dig.indexOf('0') === 0) dig = '33' + dig.slice(1);\n    else if (dig.length === 9) dig = '33' + dig;\n    out.push({ json: { phone: '+' + dig, apikey: m.callmebot_key.trim(), texte: texte } });\n  }\n}\nreturn out;"
+      },
+      "name": "Destinataires WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.callmebot.com/whatsapp.php",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $json.phone }}"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $json.apikey }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.texte }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Envoyer WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://VOTRE-PROJET.supabase.co/rest/v1/membres?select=prenom,nom,telephone,callmebot_key&actif=eq.true",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "VOTRE_CLE_PUBLISHABLE"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Connexion Supabase').first().json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Membres alerte",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        200
+      ],
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Toutes les 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Connexion Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Connexion Supabase": {
+      "main": [
+        [
+          {
+            "node": "Sorties sous terre",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sorties sous terre": {
+      "main": [
+        [
+          {
+            "node": "Garder les depassees",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Garder les depassees": {
+      "main": [
+        [
+          {
+            "node": "Email d'alerte",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Membres alerte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email d'alerte": {
+      "main": [
+        [
+          {
+            "node": "Marquer alertee",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Destinataires WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Envoyer WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Membres alerte": {
+      "main": [
+        [
+          {
+            "node": "Destinataires WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Paris"
+  }
+}

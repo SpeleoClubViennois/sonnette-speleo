@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1b1f">
+<link rel="manifest" href="manifest.json">
+<title>Sonnette Spéléo</title>
+<style>
+:root{--bg:#e8edee;--card:#f8fafa;--tx:#15262b;--mut:#587077;--ac:#c98a00;--acx:#fff;--bd:#c3d0d3;--ok:#1d7a3f;--okx:#fff;--al:#b3261e;--alx:#fff;--wr:#b36b00}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1b1f;--card:#16282d;--tx:#e4eeef;--mut:#8fa8ad;--ac:#f0b429;--acx:#1a1300;--bd:#2c4349;--ok:#2fae5f;--okx:#06230f;--al:#ff6b5e;--alx:#2b0300;--wr:#f0a429}}
+:root[data-theme="dark"]{--bg:#0e1b1f;--card:#16282d;--tx:#e4eeef;--mut:#8fa8ad;--ac:#f0b429;--acx:#1a1300;--bd:#2c4349;--ok:#2fae5f;--okx:#06230f;--al:#ff6b5e;--alx:#2b0300;--wr:#f0a429}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 "Avenir Next","Segoe UI",system-ui,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+main{max-width:760px;margin:0 auto;padding:16px 16px 48px}
+h1{font-size:1.5rem;margin:8px 0 2px}
+h2{font-size:1.05rem;margin:0 0 12px}
+p.s{color:var(--mut);margin:0 0 16px}
+section{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:.85rem;color:var(--mut);margin-bottom:2px}
+input,select,textarea{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:8px}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.w{grid-column:1/-1}
+button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);padding:8px 14px}
+button.p{background:var(--ac);color:var(--acx);border-color:var(--ac);font-weight:600}
+button.ok{background:var(--ok);color:var(--okx);border-color:var(--ok);font-weight:600}
+button.danger{background:var(--al);color:var(--alx);border-color:var(--al);font-weight:600}
+button:disabled{opacity:.5;cursor:default}
+nav{display:flex;gap:6px;margin:14px 0 16px;flex-wrap:wrap}
+nav button{flex:1;min-width:90px;padding:10px 6px;font-weight:600}
+nav button[aria-current="true"]{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.m{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--bd)}
+.m input{width:auto}
+.m span{flex:1}.m small{color:var(--mut)}
+.m button{padding:2px 10px}
+#msg{min-height:260px;white-space:pre-wrap}
+.r{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.ck{display:flex;gap:8px;align-items:center;color:var(--tx);font-size:1rem}.ck input{width:auto}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.8rem;font-weight:600;border:1px solid var(--bd)}
+.b-prevue{background:var(--bg)}
+.b-sous_terre{background:var(--wr);color:#fff;border-color:var(--wr)}
+.b-sortis{background:var(--ok);color:var(--okx);border-color:var(--ok)}
+.b-annulee{background:var(--bg);color:var(--mut)}
+.card{border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--bg)}
+.card h3{margin:0 0 4px;font-size:1.05rem}
+.card .meta{color:var(--mut);font-size:.9rem;margin:2px 0}
+.alerte{border:2px solid var(--al);border-radius:10px;background:var(--card);color:var(--tx);padding:12px;margin:10px 0;font-weight:600}
+.alerte .big{color:var(--al);font-size:1.05rem}
+details{margin-top:8px}
+summary{cursor:pointer;color:var(--mut)}
+details pre{white-space:pre-wrap;font:inherit;background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:10px;margin:8px 0 0}
+#err{display:none;background:var(--al);color:var(--alx);padding:10px 14px;border-radius:8px;margin-bottom:14px}
+#gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+#gate form{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:24px;max-width:340px;width:100%}
+.hid{display:none!important}
+.count{font-weight:700}
+.count.late{color:var(--al)}
+footer{color:var(--mut);font-size:.8rem;text-align:center;margin-top:24px}
+input.tph{cursor:pointer;caret-color:transparent}
+.role-membre #tabBtn-membres,.role-membre #tabBtn-vehicules{display:none}
+.role-membre #tab-grottes section:first-of-type{display:none}
+.role-membre #glist button{display:none}
+#tpOv{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:60}
+#tp{background:var(--card);border:1px solid var(--bd);border-radius:14px 14px 0 0;width:100%;max-width:360px;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px))}
+@media(min-width:600px){#tpOv{align-items:center}#tp{border-radius:14px}}
+#tp h2{margin:0}
+.tpCols{position:relative;display:flex;gap:8px;height:180px;margin:10px 0;mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent);-webkit-mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent)}
+.tpCol{flex:1;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tpCol::-webkit-scrollbar{display:none}
+.tpCol div{height:36px;line-height:36px;text-align:center;scroll-snap-align:center;font-size:1.2rem;cursor:pointer}
+.tpBand{position:absolute;left:0;right:0;top:72px;height:36px;border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);pointer-events:none}
+.tpSep{align-self:center;font-size:1.2rem;font-weight:600}
+</style>
+</head>
+<body>
+
+<div id="gate" class="hid">
+<form id="gateForm">
+<h2>Sonnette Spéléo</h2>
+<p class="s">Entre le mot de passe du club pour accéder à l'application.</p>
+<label for="gateCode">Mot de passe du club</label>
+<input id="gateCode" type="password" autocomplete="current-password">
+<p class="s" id="gateErr" style="color:var(--al);margin:8px 0 0"></p>
+<div class="r"><button class="p" type="submit">Entrer</button></div>
+</form>
+</div>
+
+<main>
+<h1>Sonnette Spéléo</h1>
+<p class="s">Déclare la sortie, préviens la sonnette, signale l'entrée et la sortie de la cavité.</p>
+<div id="err"></div>
+
+<nav>
+<button id="tabBtn-sortie" aria-current="true">Nouvelle sortie</button>
+<button id="tabBtn-suivi">Suivi</button>
+<button id="tabBtn-membres">Membres</button>
+<button id="tabBtn-grottes">Grottes</button>
+<button id="tabBtn-vehicules">Véhicules</button>
+</nav>
+
+<!-- ============ ONGLET NOUVELLE SORTIE ============ -->
+<div id="tab-sortie">
+
+<section>
+<h2>Qui part en sortie ?</h2>
+<div id="plist"><p class="s">Chargement des membres…</p></div>
+<p class="s" id="encWarn" style="color:var(--wr);margin:8px 0 0"></p>
+</section>
+
+<section>
+<h2>La sortie</h2>
+<div class="g">
+<div class="w"><label for="gsel">Grotte connue du club (pré-remplit la sortie)</label><select id="gsel"><option value="">— saisie libre ci-dessous —</option></select><p class="s" id="ginfo" style="margin:4px 0 0"></p></div>
+<div><label for="dts">Date de la sortie</label><input id="dts" type="date"></div>
+<div><label for="typc">Type de cavité</label><select id="typc"><option value="grotte">Grotte</option><option value="aven">Aven</option><option value="gouffre">Gouffre</option><option value="cavité">Cavité</option></select></div>
+<div class="w"><label for="cav">Nom de la cavité (avec de, du, de la…)</label><input id="cav" placeholder="de la Balme, d'Orgnac, du Cerdon…"></div>
+<div><label for="dep">Département</label><input id="dep" placeholder="Ardèche"></div>
+<div><label for="obj">Objectif dans la cavité</label><input id="obj" placeholder="fond, réseau X, profondeur…"></div>
+<div><label for="club">Club</label><input id="club"></div>
+<div><label for="ext">Personnes extérieures au club</label><input id="ext" type="number" min="0" placeholder="0"></div>
+<div><label for="typ">Type de sortie</label><select id="typ"><option value="">—</option><option value="initiation">Sortie initiation</option><option value="technique">Sortie technique</option></select></div>
+<div><label for="conn">Connaissance de la cavité</label><select id="conn"><option value="">—</option><option>Cavité connue du groupe</option><option>Cavité connue d'une partie du groupe</option><option>Première fois pour le groupe</option></select></div>
+<div class="w"><label>Matériel</label>
+<label class="ck"><input type="checkbox" id="mh">Matériel spécifique</label>
+<div id="spec" style="display:none;margin:2px 0 6px 26px">
+<label class="ck"><input type="checkbox" class="sp" data-l="lampe">Lampe</label>
+<label class="ck"><input type="checkbox" class="sp" data-l="casque">Casque</label>
+<label class="ck"><input type="checkbox" class="sp" data-l="éclairage de secours">Éclairage de secours</label>
+<label class="ck"><input type="checkbox" class="sp" data-l="baudrier">Baudrier</label>
+<label class="ck"><input type="checkbox" class="sp" id="sb" data-l="bloqueur">Bloqueur</label>
+<div id="blq" style="display:none;margin:0 0 0 26px">
+<label class="ck"><input type="checkbox" data-l="bloqueur de ventre (crawl)">Crawl (bloqueur de ventre)</label>
+<label class="ck"><input type="checkbox" data-l="bloqueur de pied (pantin)">Pantin (bloqueur de pied)</label>
+</div>
+<label class="ck"><input type="checkbox" class="sp" data-l="descendeur">Descendeur</label>
+<label class="ck"><input type="checkbox" class="sp" data-l="longes">Longes</label>
+<label class="ck"><input type="checkbox" class="sp" data-l="kit">Kit</label>
+</div>
+<label class="ck"><input type="checkbox" id="mc">Harnais complet (matériel personnel pour descendre sur corde et évoluer dans la grotte)</label>
+<label class="ck"><input type="checkbox" id="mk">Kit secours club (collectif)</label></div>
+<div class="w"><label>Véhicules au parking (coche ceux présents)</label><div id="vsel"></div>
+<label for="car" style="margin-top:8px">Autre véhicule (modèle, couleur)</label><input id="car"><label for="plq" style="margin-top:8px">Plaque de l'autre véhicule</label><input id="plq"></div>
+<div><label for="he">Entrée prévue</label><input id="he" type="text" class="tph" readonly inputmode="none" placeholder="--:--"></div>
+<div><label for="hs2">Sortie prévue</label><input id="hs2" type="text" class="tph" readonly inputmode="none" placeholder="--:--"></div>
+<div><label for="hr">Secours à déclencher à</label><input id="hr" type="text" class="tph" readonly inputmode="none" placeholder="--:--"><p class="s" id="hrHint" style="margin:2px 0 0;font-size:.78rem"></p></div>
+<div><label for="sq">Sonnette (reste en surface)</label><select id="sq"></select></div>
+</div>
+<p class="s" id="sqWarn" style="color:var(--wr);margin:8px 0 0"></p>
+</section>
+
+<section>
+<h2>Message</h2>
+<textarea id="msg" readonly></textarea>
+<div class="r">
+<button class="p" id="cp">Copier le message</button>
+<button id="wa">Envoyer sur WhatsApp</button>
+<span id="ok" aria-live="polite"></span>
+</div>
+<div class="r" style="margin-top:14px">
+<button class="ok" id="save">Déclarer la sortie</button>
+<span id="saveInfo" class="s" style="margin:0"></span>
+</div>
+<p class="s" style="margin:10px 0 0">« Déclarer la sortie » enregistre la sortie dans la base du club : elle apparaît dans l'onglet Suivi pour toute l'équipe et la sonnette.</p>
+</section>
+
+</div>
+
+<!-- ============ ONGLET SUIVI ============ -->
+<div id="tab-suivi" class="hid">
+<section>
+<h2>Sorties en cours et à venir</h2>
+<p class="s">La sonnette surveille cette page. Si l'heure de secours est dépassée sans nouvelle de l'équipe : appeler le 112 et demander le Spéléo Secours Français, en lisant le message de la sortie.</p>
+<div class="r" style="margin:0 0 12px"><button id="reload">Actualiser</button><span class="s" id="lastRefresh" style="margin:0"></span></div>
+<div id="actives"></div>
+<h2 style="margin-top:20px">Dernières sorties terminées</h2>
+<div id="finies"></div>
+</section>
+</div>
+
+<!-- ============ ONGLET MEMBRES ============ -->
+<div id="tab-membres" class="hid">
+<section>
+<h2 id="mfTitle">Ajouter un membre</h2>
+<div class="g">
+<div><label for="np">Prénom</label><input id="np"></div>
+<div><label for="nn">Nom</label><input id="nn"></div>
+<div><label for="nd">Date de naissance</label><input id="nd" type="date"></div>
+<div><label for="nl">Niveau</label><select id="nl"><option>Débutant</option><option>Initié</option><option selected>Autonome</option><option>Confirmé</option><option>Initiateur</option><option>Moniteur</option></select></div>
+<div><label for="nt">Téléphone</label><input id="nt" type="tel"></div>
+<div><label for="nu">Personne à prévenir (nom + téléphone)</label><input id="nu"></div>
+<div><label for="nc">Clé CallMeBot (alerte WhatsApp automatique)</label><input id="nc"></div>
+</div>
+<div class="r">
+<button class="p" id="add">Ajouter le membre</button>
+<button id="cancelEdit" class="hid">Annuler la modification</button>
+</div>
+</section>
+<section>
+<h2>Membres du club</h2>
+<div id="list"><p class="s">Chargement…</p></div>
+</section>
+</div>
+
+<!-- ============ ONGLET GROTTES ============ -->
+<div id="tab-grottes" class="hid">
+<section>
+<h2 id="gfTitle">Ajouter une grotte</h2>
+<div class="g">
+<div><label for="gtyp">Type de cavité</label><select id="gtyp"><option value="grotte">Grotte</option><option value="aven">Aven</option><option value="gouffre">Gouffre</option><option value="cavité">Cavité</option></select></div>
+<div><label for="gnom">Nom (avec de, du, de la…)</label><input id="gnom" placeholder="de la Balme"></div>
+<div><label for="gdep">Département</label><input id="gdep" placeholder="Ardèche"></div>
+<div><label for="gemp">Emplacement (commune, accès, parking)</label><input id="gemp"></div>
+<div class="w"><label for="ggps">Point GPS de l'entrée (lat, lon)</label><input id="ggps" placeholder="45.123456, 4.567890"></div>
+<div><label for="gprof">Profondeur</label><input id="gprof" placeholder="-120 m"></div>
+<div><label for="gdur">Durée habituelle des sorties</label><input id="gdur" placeholder="4 à 6 h"></div>
+<div><label for="gdif">Difficulté</label><select id="gdif"><option value="">—</option><option>Facile</option><option>Moyenne</option><option>Difficile</option><option>Très difficile</option></select></div>
+<div><label for="gsty">Style</label><select id="gsty"><option value="">—</option><option>Initiation</option><option>Technique</option><option>Initiation et technique</option></select></div>
+<div class="w"><label for="gnot">Notes (équipement en place, points d'attention…)</label><input id="gnot"></div>
+</div>
+<div class="r">
+<button class="p" id="addG">Ajouter la grotte</button>
+<button id="cancelEditG" class="hid">Annuler la modification</button>
+</div>
+</section>
+<section>
+<h2>Grottes du club</h2>
+<div id="glist"><p class="s">Chargement…</p></div>
+</section>
+</div>
+
+<!-- ============ ONGLET VEHICULES ============ -->
+<div id="tab-vehicules" class="hid">
+<section>
+<h2 id="vfTitle">Ajouter un véhicule</h2>
+<div class="g">
+<div><label for="vmod">Modèle</label><input id="vmod" placeholder="Dacia Duster"></div>
+<div><label for="vimm">Immatriculation</label><input id="vimm" placeholder="AB-123-CD"></div>
+<div><label for="vcou">Couleur</label><input id="vcou"></div>
+<div><label for="vpro">Propriétaire</label><input id="vpro"></div>
+</div>
+<div class="r">
+<button class="p" id="addV">Ajouter le véhicule</button>
+<button id="cancelEditV" class="hid">Annuler la modification</button>
+</div>
+</section>
+<section>
+<h2>Véhicules du club et des membres</h2>
+<div id="vlist"><p class="s">Chargement…</p></div>
+</section>
+</div>
+
+<footer>Sonnette Spéléo · <button id="logout" style="padding:2px 10px;font-size:.8rem">Changer de compte</button></footer>
+</main>
+
+<div id="tpOv" class="hid">
+<div id="tp">
+<h2 id="tpTitle"></h2>
+<div class="tpCols">
+<div class="tpBand"></div>
+<div class="tpCol" id="tpH"></div>
+<div class="tpSep">:</div>
+<div class="tpCol" id="tpM"></div>
+</div>
+<div class="r" style="justify-content:flex-end">
+<button id="tpClear">Effacer</button>
+<button id="tpCancel">Annuler</button>
+<button class="p" id="tpOk">OK</button>
+</div>
+</div>
+</div>
+
+<script>
+// ================================================================
+// CONFIGURATION - a remplir apres la creation du projet Supabase
+// (voir GUIDE.md, etape 2)
+// ================================================================
+const CONFIG = {
+  SUPABASE_URL: '',      // ex : 'https://abcdefgh.supabase.co' (Supabase > Project Settings > Data API)
+  SUPABASE_ANON_KEY: '', // la cle "publishable" / "anon public" du projet
+  ADMIN_EMAIL: 'admin@example.org',   // compte admin (le meme email que dans is_admin() de schema.sql)
+  MEMBRE_EMAIL: 'membre@example.org', // compte membre (sorties, suivi, consultation grottes)
+  CLUB: ''
+};
+// ================================================================
+
+const $ = id => document.getElementById(id);
+let membres = [], sorties = [], grottes = [], vehicules = [], sel = new Set(), selV = new Set(), editId = null, editGId = null, editVId = null;
+
+// ---------- Acces Supabase (REST, authentifie) ----------
+async function api(path, opts) {
+  opts = opts || {};
+  const tok = await authToken();
+  const res = await fetch(CONFIG.SUPABASE_URL + '/rest/v1/' + path, {
+    method: opts.method || 'GET',
+    headers: Object.assign({
+      'apikey': CONFIG.SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + (tok || CONFIG.SUPABASE_ANON_KEY),
+      'Content-Type': 'application/json'
+    }, opts.headers || {}),
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if (res.status === 401) { saveSession(null); gate(); throw new Error('Session expirée : reconnecte-toi.') }
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.json()).message || '' } catch (e) {}
+    throw new Error('Erreur Supabase (' + res.status + ') ' + detail);
+  }
+  if (res.status === 204) return null;
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+function showErr(msg) {
+  const e = $('err');
+  e.textContent = msg;
+  e.style.display = 'block';
+  clearTimeout(showErr.t);
+  showErr.t = setTimeout(() => { e.style.display = 'none' }, 8000);
+}
+const configured = () => CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY;
+
+// ---------- Connexion (compte club Supabase) ----------
+let session = null;
+try { session = JSON.parse(localStorage.getItem('sq_session') || 'null') } catch (e) {}
+if (session && !session.role) session.role = 'admin'; // sessions d'avant les deux niveaux : compte admin
+function saveSession(d, role) {
+  session = d ? { access_token: d.access_token, refresh_token: d.refresh_token, expires_at: d.expires_at || (Math.floor(Date.now() / 1000) + (d.expires_in || 3600)), role: role || (session && session.role) || 'membre' } : null;
+  try { session ? localStorage.setItem('sq_session', JSON.stringify(session)) : localStorage.removeItem('sq_session') } catch (e) {}
+  applyRole();
+}
+function applyRole() {
+  const admin = !!(session && session.role === 'admin');
+  document.body.classList.toggle('role-membre', !admin);
+  if (!admin) {
+    const cache = ['membres', 'vehicules'];
+    const cur = TABS.find(t => !$('tab-' + t).classList.contains('hid'));
+    if (cache.includes(cur)) showTab('sortie');
+  }
+}
+async function authToken() {
+  if (!session) return null;
+  if (Date.now() / 1000 > session.expires_at - 120) {
+    let r;
+    try {
+      r = await fetch(CONFIG.SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', { method: 'POST', headers: { 'apikey': CONFIG.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: session.refresh_token }) });
+    } catch (e) { throw new Error('Pas de réseau pour renouveler la session.') }
+    if (!r.ok) { saveSession(null); gate(); throw new Error('Session expirée : reconnecte-toi.') }
+    saveSession(await r.json());
+  }
+  return session.access_token;
+}
+function gate() {
+  if (session) return;
+  $('gate').classList.remove('hid');
+  $('gateCode').focus();
+}
+async function tryLogin(email, pwd) {
+  const r = await fetch(CONFIG.SUPABASE_URL + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { 'apikey': CONFIG.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, password: pwd }) });
+  return r.ok ? await r.json() : null;
+}
+$('gateForm').onsubmit = async ev => {
+  ev.preventDefault();
+  $('gateErr').textContent = '';
+  const pwd = $('gateCode').value;
+  let d, role;
+  try {
+    d = await tryLogin(CONFIG.MEMBRE_EMAIL, pwd);
+    role = 'membre';
+    if (!d) { d = await tryLogin(CONFIG.ADMIN_EMAIL, pwd); role = 'admin' }
+  } catch (e) { $('gateErr').textContent = 'Connexion impossible (pas de réseau ?).'; return }
+  if (!d) { $('gateErr').textContent = 'Mot de passe incorrect.'; return }
+  saveSession(d, role);
+  $('gateCode').value = '';
+  $('gate').classList.add('hid');
+  loadMembres(); loadGrottes(); loadVehicules();
+};
+$('logout').onclick = () => { saveSession(null); gate() };
+
+// ---------- Onglets ----------
+const TABS = ['sortie', 'suivi', 'membres', 'grottes', 'vehicules'];
+function showTab(name) {
+  TABS.forEach(t => {
+    $('tab-' + t).classList.toggle('hid', t !== name);
+    $('tabBtn-' + t).setAttribute('aria-current', t === name ? 'true' : 'false');
+  });
+  if (name === 'suivi') loadSorties();
+}
+TABS.forEach(t => { $('tabBtn-' + t).onclick = () => showTab(t) });
+
+// ---------- Utilitaires du message (logique d'origine) ----------
+function age(d) {
+  if (!d) return null;
+  const b = new Date(d), n = new Date();
+  let a = n.getFullYear() - b.getFullYear();
+  if (n < new Date(n.getFullYear(), b.getMonth(), b.getDate())) a--;
+  return a;
+}
+function hh(t) { return t ? t.replace(':', 'h') : '' }
+const TYC = { grotte: 'la grotte', aven: 'l’aven', gouffre: 'le gouffre', 'cavité': 'la cavité' };
+function cavTxt(raw, s) { return (TYC[s] || TYC.grotte) + ' ' + raw.trim() }
+const DEP = {
+ "du": "Bas-Rhin,Calvados,Cantal,Cher,Doubs,Finistère,Gard,Gers,Haut-Rhin,Jura,Loir-et-Cher,Loiret,Lot,Lot-et-Garonne,Maine-et-Loire,Morbihan,Nord,Pas-de-Calais,Puy-de-Dôme,Rhône,Tarn,Tarn-et-Garonne,Territoire de Belfort,Val-de-Marne,Val-d'Oise,Var,Vaucluse",
+ "de la": "Charente,Charente-Maritime,Corrèze,Corse-du-Sud,Côte-d'Or,Creuse,Dordogne,Drôme,Gironde,Guadeloupe,Guyane,Haute-Corse,Haute-Garonne,Haute-Loire,Haute-Marne,Haute-Saône,Haute-Savoie,Haute-Vienne,Loire,Loire-Atlantique,Lozère,Manche,Marne,Martinique,Mayenne,Meurthe-et-Moselle,Meuse,Moselle,Nièvre,Saône-et-Loire,Sarthe,Savoie,Seine-et-Marne,Seine-Maritime,Seine-Saint-Denis,Somme,Vendée,Vienne",
+ "de l'": "Ain,Aisne,Allier,Ardèche,Ariège,Aube,Aude,Aveyron,Essonne,Eure,Eure-et-Loir,Hérault,Ille-et-Vilaine,Indre,Indre-et-Loire,Isère,Oise,Orne,Yonne",
+ "des": "Alpes-de-Haute-Provence,Alpes-Maritimes,Ardennes,Bouches-du-Rhône,Côtes-d'Armor,Deux-Sèvres,Hautes-Alpes,Hautes-Pyrénées,Hauts-de-Seine,Landes,Pyrénées-Atlantiques,Pyrénées-Orientales,Vosges,Yvelines",
+ "de": "Paris,Mayotte,La Réunion"
+};
+function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, "'").replace(/[-\s]+/g, ' ').trim() }
+const DM = {};
+Object.keys(DEP).forEach(k => DEP[k].split(',').forEach(n => { DM[norm(n)] = { a: k, n: n } }));
+function depTxt(s) {
+  const full = norm(s).replace(/^(le )?departement /, '');
+  const q = full.replace(/^(du |de la |de l'|des |de |le |la |les |l')/, '');
+  const e = DM[q] || DM[full];
+  if (!e) return /^[aeiouyâàéèêëîïôûü]/i.test(s) ? "de l'" + s : 'de ' + s;
+  return e.a + (e.a.slice(-1) === "'" ? '' : ' ') + e.n;
+}
+function dateFr(iso) {
+  const d = new Date(iso + 'T12:00:00');
+  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+// ---------- Generation du message ----------
+function gen() {
+  const v = id => $(id).value.trim();
+  const parts = membres.filter(m => sel.has(m.id));
+  const ext = Math.max(0, parseInt($('ext').value) || 0);
+  const n = parts.length + ext;
+  const o = [];
+  const lieu = (v('cav') ? cavTxt(v('cav'), $('typc').value) : '[cavité]') + (v('dep') ? ' dans le département ' + depTxt(v('dep')) : '');
+  const today = new Date().toISOString().slice(0, 10);
+  const quand = (!v('dts') || v('dts') === today) ? 'aujourd’hui nous sortons' : 'le ' + dateFr(v('dts')) + ' nous sortons';
+  o.push('Bonjour, ' + quand + ' dans ' + lieu + '.');
+  const g = grottes.find(z => z.id === $('gsel').value);
+  if (g) {
+    const gl = [];
+    if (g.emplacement) gl.push(g.emplacement);
+    if (g.gps) gl.push('point GPS ' + g.gps);
+    if (gl.length) o.push('Entrée de la cavité : ' + gl.join(', ') + '.' + (g.profondeur ? ' Profondeur : ' + g.profondeur + '.' : ''));
+  }
+  if (v('obj')) o.push('Objectif : ' + v('obj') + '.');
+  if (v('typ')) o.push('Type de sortie : ' + v('typ') + '.');
+  if (n) o.push('Nous sommes ' + n + ' spéléologue' + (n > 1 ? 's' : '') + ' autonome' + (n > 1 ? 's' : '') + (v('club') ? ', club ' + v('club') : '') + (ext ? ' (dont ' + ext + ' personne' + (ext > 1 ? 's' : '') + ' extérieure' + (ext > 1 ? 's' : '') + ' au club)' : '') + '.');
+  if (parts.length) o.push('Participants :\n' + parts.map((m, i) => { const a = age(m.date_naissance); return '* ' + m.prenom + ' ' + m.nom + ' (' + (a !== null ? a + ' ans, ' : '') + m.niveau + ')' + (i < parts.length - 1 ? ',' : '.') }).join('\n'));
+  const mt = [];
+  if ($('mh').checked) {
+    const sp = [...document.querySelectorAll('#spec .sp')].filter(e => e.checked).map(e => e.dataset.l);
+    if ($('sb').checked) {
+      const bq = [...document.querySelectorAll('#blq input')].filter(e => e.checked).map(e => e.dataset.l);
+      sp.splice(sp.indexOf('bloqueur'), 1, ...(bq.length ? bq : ['bloqueur']));
+    }
+    mt.push('matériel spécifique' + (sp.length ? ' (' + sp.join(', ') + ')' : ''));
+  }
+  if ($('mc').checked) mt.push('harnais complet avec le matériel personnel pour descendre sur corde et évoluer dans la grotte');
+  if ($('mk').checked) mt.push('kit secours du club');
+  const mb = [];
+  if (mt.length) mb.push('Matériel : ' + mt.join(' ; ') + '.');
+  const vs = selVehicules();
+  if (vs.length) o.push('Voiture' + (vs.length > 1 ? 's' : '') + ' au parking : ' + vs.map(w => [w.modele, w.couleur].filter(Boolean).join(' ') + (w.plaque ? ' (' + w.plaque + ')' : '')).join(' ; ') + '.');
+  if (v('conn')) mb.push(v('conn') + '.');
+  if (mb.length) o.push(mb.join('\n'));
+  const t = [];
+  if (v('he')) t.push('entrée prévue à ' + hh(v('he')));
+  if (v('hs2')) t.push('sortie prévue à ' + hh(v('hs2')));
+  if (t.length) o.push(t.join(', ').replace(/^./, c => c.toUpperCase()) + '.');
+  const sm = membres.find(z => z.id === $('sq').value);
+  if (sm) o.push('Sonnette : ' + sm.prenom + ' ' + sm.nom + (sm.telephone ? ', ' + sm.telephone : '') + '.');
+  if (v('hr')) o.push('Secours à déclencher à ' + hh(v('hr')) + ', uniquement par la sonnette.');
+  $('msg').value = o.join('\n\n');
+  $('sqWarn').textContent = (sm && sel.has(sm.id)) ? 'Attention : la sonnette fait partie des participants. Elle doit rester en surface.' : '';
+  const enc = parts.some(m => m.niveau === 'Initiateur' || m.niveau === 'Moniteur');
+  $('encWarn').textContent = (parts.length && !enc) ? 'Attention : aucun initiateur ni moniteur dans le groupe. Au club, seuls les initiateurs peuvent emmener des gens en grotte.' : '';
+}
+
+// ---------- Onglet sortie : participants + sonnette ----------
+function renderParticipants() {
+  const L = $('plist');
+  L.innerHTML = '';
+  const actifs = membres.filter(m => m.actif !== false);
+  if (!actifs.length) { L.innerHTML = '<p class="s">Aucun membre. Ajoute-les dans l’onglet Membres.</p>'; return }
+  actifs.forEach(m => {
+    const r = document.createElement('div');
+    r.className = 'm';
+    const c = document.createElement('input');
+    c.type = 'checkbox';
+    c.checked = sel.has(m.id);
+    c.setAttribute('aria-label', 'Part en sortie : ' + m.prenom + ' ' + m.nom);
+    c.onchange = () => { c.checked ? sel.add(m.id) : sel.delete(m.id); gen() };
+    const s = document.createElement('span');
+    const a = age(m.date_naissance);
+    s.textContent = m.prenom + ' ' + m.nom;
+    const sm = document.createElement('small');
+    sm.textContent = ' ' + (a !== null ? a + ' ans, ' : '') + m.niveau;
+    s.appendChild(sm);
+    r.append(c, s);
+    L.appendChild(r);
+  });
+  const q = $('sq'), pv = q.value;
+  q.innerHTML = '<option value="">—</option>';
+  actifs.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m.id;
+    o.textContent = m.prenom + ' ' + m.nom;
+    q.appendChild(o);
+  });
+  q.value = pv;
+}
+
+// ---------- Vehicules et grotte dans le formulaire de sortie ----------
+function selVehicules() {
+  const v = id => $(id).value.trim();
+  const out = vehicules.filter(w => selV.has(w.id)).map(w => ({ modele: w.modele, plaque: w.immatriculation || '', couleur: w.couleur || '', proprietaire: w.proprietaire || '' }));
+  if (v('car') || v('plq')) out.push({ modele: v('car'), plaque: v('plq'), couleur: '', proprietaire: '' });
+  return out;
+}
+function renderVehSel() {
+  const L = $('vsel');
+  L.innerHTML = '';
+  const actifs = vehicules.filter(w => w.actif !== false);
+  if (!actifs.length) { L.innerHTML = '<p class="s">Aucun véhicule enregistré pour l’instant (onglet Véhicules).</p>'; return }
+  actifs.forEach(w => {
+    const r = document.createElement('div');
+    r.className = 'm';
+    const c = document.createElement('input');
+    c.type = 'checkbox';
+    c.checked = selV.has(w.id);
+    c.setAttribute('aria-label', 'Au parking : ' + w.modele);
+    c.onchange = () => { c.checked ? selV.add(w.id) : selV.delete(w.id); gen() };
+    const s = document.createElement('span');
+    s.textContent = w.modele + (w.couleur ? ' ' + w.couleur : '');
+    const sm = document.createElement('small');
+    sm.textContent = ' ' + [w.immatriculation, w.proprietaire].filter(Boolean).join(' — ');
+    s.appendChild(sm);
+    r.append(c, s);
+    L.appendChild(r);
+  });
+}
+function renderGrotteSel() {
+  const q = $('gsel'), pv = q.value;
+  q.innerHTML = '<option value="">— saisie libre ci-dessous —</option>';
+  grottes.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g.id;
+    o.textContent = ((TYC[g.type_cavite] || 'la cavité') + ' ' + g.nom).replace(/^./, c => c.toUpperCase()) + (g.departement ? ' (' + g.departement + ')' : '');
+    q.appendChild(o);
+  });
+  q.value = pv;
+  gInfo();
+}
+function gInfo() {
+  const g = grottes.find(z => z.id === $('gsel').value);
+  $('ginfo').textContent = g ? [g.profondeur ? 'profondeur ' + g.profondeur : '', g.duree ? 'durée ' + g.duree : '', g.difficulte ? 'difficulté ' + g.difficulte.toLowerCase() : '', g.style ? 'style ' + g.style.toLowerCase() : '', g.notes || ''].filter(Boolean).join(' · ') : '';
+}
+$('gsel').addEventListener('change', () => {
+  const g = grottes.find(z => z.id === $('gsel').value);
+  if (g) {
+    $('typc').value = g.type_cavite;
+    $('cav').value = g.nom;
+    $('dep').value = g.departement || '';
+    if (g.style === 'Initiation') $('typ').value = 'initiation';
+    if (g.style === 'Technique') $('typ').value = 'technique';
+  }
+  gInfo();
+  majAuto();
+  gen();
+});
+
+// ---------- Delai de grace : pre-remplissage des heures ----------
+// Sortie prevue = entree + duree max de la fiche grotte ; secours = sortie prevue + 3 h.
+// Des que l'utilisateur modifie un champ a la main, il reprend la main dessus.
+const GRACE_H = 3;
+let hrAuto = true, hs2Auto = true;
+function addH(t, h) {
+  const p = t.split(':').map(Number);
+  const tot = (p[0] * 60 + p[1] + Math.round(h * 60)) % 1440;
+  return String(Math.floor(tot / 60)).padStart(2, '0') + ':' + String(tot % 60).padStart(2, '0');
+}
+function dureeMax() {
+  const g = grottes.find(z => z.id === $('gsel').value);
+  if (!g || !g.duree) return null;
+  const m = g.duree.match(/(\d+(?:[.,]\d+)?)(?:\s*(?:à|a|-)\s*(\d+(?:[.,]\d+)?))?\s*h/i);
+  if (!m) return null;
+  return parseFloat((m[2] || m[1]).replace(',', '.'));
+}
+function majAuto() {
+  if ($('he').value && hs2Auto) {
+    const d = dureeMax();
+    if (d) $('hs2').value = addH($('he').value, d);
+  }
+  if ($('hs2').value && hrAuto) {
+    $('hr').value = addH($('hs2').value, GRACE_H);
+    $('hrHint').textContent = 'Proposé : sortie prévue + ' + GRACE_H + ' h, modifiable.';
+  }
+}
+// ---------- Selecteur d'heure a roues (style iPhone) ----------
+const TP = { target: null };
+const TP_ITEM = 36;
+function tpFill() {
+  if ($('tpH').childElementCount) return;
+  const mk = (col, max, step) => {
+    col.appendChild(document.createElement('div'));
+    col.appendChild(document.createElement('div'));
+    for (let i = 0; i < max; i += step) {
+      const d = document.createElement('div');
+      d.textContent = String(i).padStart(2, '0');
+      d.onclick = () => col.scrollTo({ top: (i / step) * TP_ITEM, behavior: 'smooth' });
+      col.appendChild(d);
+    }
+    col.appendChild(document.createElement('div'));
+    col.appendChild(document.createElement('div'));
+  };
+  mk($('tpH'), 24, 1);
+  mk($('tpM'), 60, 5);
+}
+function openPicker(id, title) {
+  TP.target = id;
+  tpFill();
+  $('tpTitle').textContent = title;
+  $('tpOv').classList.remove('hid');
+  let h = 10, m = 0;
+  const cur = $(id).value;
+  if (/^\d{2}:\d{2}$/.test(cur)) { h = +cur.slice(0, 2); m = Math.round(+cur.slice(3) / 5) * 5 % 60 }
+  requestAnimationFrame(() => {
+    $('tpH').scrollTop = h * TP_ITEM;
+    $('tpM').scrollTop = (m / 5) * TP_ITEM;
+  });
+}
+function tpApply(val) {
+  $(TP.target).value = val;
+  if (TP.target === 'hs2') hs2Auto = false;
+  if (TP.target === 'hr') { hrAuto = false; $('hrHint').textContent = '' }
+  majAuto();
+  gen();
+  $('tpOv').classList.add('hid');
+}
+$('tpOk').onclick = () => {
+  const h = Math.min(23, Math.max(0, Math.round($('tpH').scrollTop / TP_ITEM)));
+  const m = Math.min(55, Math.max(0, Math.round($('tpM').scrollTop / TP_ITEM) * 5));
+  tpApply(String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'));
+};
+$('tpClear').onclick = () => tpApply('');
+$('tpCancel').onclick = () => $('tpOv').classList.add('hid');
+$('tpOv').addEventListener('click', e => { if (e.target === $('tpOv')) $('tpOv').classList.add('hid') });
+(function () {
+  const titles = { he: 'Entrée prévue', hs2: 'Sortie prévue', hr: 'Secours à déclencher à' };
+  Object.keys(titles).forEach(id => $(id).addEventListener('click', () => openPicker(id, titles[id])));
+})();
+
+// ---------- Enregistrement d'une sortie ----------
+function materielTxt() {
+  const mt = [];
+  if ($('mh').checked) {
+    const sp = [...document.querySelectorAll('#spec .sp')].filter(e => e.checked).map(e => e.dataset.l);
+    mt.push('spécifique' + (sp.length ? ' (' + sp.join(', ') + ')' : ''));
+  }
+  if ($('mc').checked) mt.push('harnais complet');
+  if ($('mk').checked) mt.push('kit secours club');
+  return mt.join(' ; ');
+}
+$('save').onclick = async () => {
+  if (!configured()) { showErr('Supabase n’est pas encore configuré (voir GUIDE.md).'); return }
+  const v = id => $(id).value.trim();
+  const parts = membres.filter(m => sel.has(m.id));
+  const sm = membres.find(z => z.id === $('sq').value);
+  const manq = [];
+  if (!v('cav')) manq.push('le nom de la cavité');
+  if (!parts.length) manq.push('au moins un participant');
+  if (!sm) manq.push('la sonnette');
+  if (!v('hr')) manq.push('l’heure de déclenchement des secours');
+  if (manq.length) { showErr('Il manque : ' + manq.join(', ') + '.'); return }
+  if (!parts.some(m => m.niveau === 'Initiateur' || m.niveau === 'Moniteur')) {
+    if (!confirm('Aucun initiateur ni moniteur parmi les participants. Déclarer quand même la sortie ?')) return;
+  }
+  gen();
+  $('save').disabled = true;
+  try {
+    await api('sorties', {
+      method: 'POST',
+      headers: { 'Prefer': 'return=minimal' },
+      body: {
+        date_sortie: v('dts') || new Date().toISOString().slice(0, 10),
+        type_cavite: $('typc').value,
+        nom_cavite: v('cav'),
+        departement: v('dep'),
+        objectif: v('obj'),
+        club: v('club'),
+        nb_exterieurs: Math.max(0, parseInt($('ext').value) || 0),
+        type_sortie: $('typ').value,
+        connaissance: $('conn').value,
+        materiel: materielTxt(),
+        grotte_id: $('gsel').value || null,
+        gps: (grottes.find(z => z.id === $('gsel').value) || {}).gps || '',
+        vehicules: selVehicules(),
+        heure_entree: v('he') || null,
+        heure_sortie_prevue: v('hs2') || null,
+        heure_secours: v('hr') || null,
+        sonnette_nom: sm.prenom + ' ' + sm.nom,
+        sonnette_tel: sm.telephone || '',
+        participants: parts.map(m => ({ id: m.id, prenom: m.prenom, nom: m.nom, niveau: m.niveau, age: age(m.date_naissance), tel: m.telephone || '', urgence: m.contact_urgence || '' })),
+        message: $('msg').value,
+        statut: 'prevue'
+      }
+    });
+    $('saveInfo').textContent = 'Sortie déclarée.';
+    setTimeout(() => $('saveInfo').textContent = '', 3000);
+    showTab('suivi');
+  } catch (e) {
+    showErr(e.message);
+  }
+  $('save').disabled = false;
+};
+
+// ---------- Copier / WhatsApp ----------
+$('cp').onclick = async () => {
+  gen();
+  const m = $('msg');
+  let ok = false;
+  try { await navigator.clipboard.writeText(m.value); ok = true }
+  catch (e) { m.select(); try { ok = document.execCommand('copy') } catch (e2) {} }
+  $('ok').textContent = ok ? 'Message copié.' : 'Copie impossible, sélectionne le texte à la main.';
+  setTimeout(() => $('ok').textContent = '', 2500);
+};
+$('wa').onclick = () => {
+  gen();
+  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent($('msg').value), '_blank');
+};
+
+// ---------- Onglet suivi ----------
+function secoursDate(s) {
+  if (!s.heure_secours) return null;
+  const d = new Date(s.date_sortie + 'T' + s.heure_secours);
+  if (s.heure_entree && s.heure_secours < s.heure_entree) d.setDate(d.getDate() + 1);
+  return d;
+}
+function dureeTxt(ms) {
+  const mn = Math.round(Math.abs(ms) / 60000);
+  if (mn < 60) return mn + ' min';
+  return Math.floor(mn / 60) + ' h ' + String(mn % 60).padStart(2, '0');
+}
+const STATUT = { prevue: 'Prévue', sous_terre: 'Sous terre', sortis: 'Sortis', annulee: 'Annulée' };
+function sortieCard(s) {
+  const c = document.createElement('div');
+  c.className = 'card';
+  const lieu = (TYC[s.type_cavite] || 'la cavité') + ' ' + (s.nom_cavite || '?');
+  const h = document.createElement('h3');
+  h.textContent = lieu.replace(/^./, x => x.toUpperCase()) + (s.departement ? ' (' + s.departement + ')' : '');
+  const badge = document.createElement('span');
+  badge.className = 'badge b-' + s.statut;
+  badge.textContent = STATUT[s.statut] || s.statut;
+  const meta1 = document.createElement('p');
+  meta1.className = 'meta';
+  meta1.textContent = dateFr(s.date_sortie) + (s.heure_entree ? ' — entrée prévue ' + hh(s.heure_entree) : '') + (s.heure_sortie_prevue ? ', sortie prévue ' + hh(s.heure_sortie_prevue) : '');
+  const meta2 = document.createElement('p');
+  meta2.className = 'meta';
+  const noms = (s.participants || []).map(p => p.prenom).join(', ');
+  meta2.textContent = (s.participants || []).length + ' participant' + ((s.participants || []).length > 1 ? 's' : '') + (noms ? ' : ' + noms : '') + (s.nb_exterieurs ? ' + ' + s.nb_exterieurs + ' ext.' : '');
+  const meta3 = document.createElement('p');
+  meta3.className = 'meta';
+  meta3.textContent = 'Sonnette : ' + (s.sonnette_nom || '—') + (s.sonnette_tel ? ' (' + s.sonnette_tel + ')' : '') + (s.heure_secours ? ' — secours à déclencher à ' + hh(s.heure_secours) : '');
+  c.append(h, badge, meta1, meta2, meta3);
+  if ((s.vehicules || []).length) {
+    const m4 = document.createElement('p');
+    m4.className = 'meta';
+    m4.textContent = 'Voiture' + (s.vehicules.length > 1 ? 's' : '') + ' au parking : ' + s.vehicules.map(w => [w.modele, w.couleur].filter(Boolean).join(' ') + (w.plaque ? ' (' + w.plaque + ')' : '')).join(' ; ');
+    c.appendChild(m4);
+  }
+  if (s.gps) {
+    const m5 = document.createElement('p');
+    m5.className = 'meta';
+    const a = document.createElement('a');
+    a.href = 'https://maps.google.com/?q=' + encodeURIComponent(s.gps);
+    a.target = '_blank';
+    a.textContent = s.gps;
+    m5.append('Entrée de la cavité, GPS : ', a);
+    c.appendChild(m5);
+  }
+
+  const sd = secoursDate(s);
+  if (s.statut === 'sous_terre' && sd) {
+    const now = new Date();
+    if (now > sd) {
+      const al = document.createElement('div');
+      al.className = 'alerte';
+      al.innerHTML = '<div class="big">HEURE DE SECOURS DÉPASSÉE de ' + dureeTxt(now - sd) + '</div>1. Essayer de joindre les participants (numéros dans le message ci-dessous).<br>2. Sans nouvelle : appeler le <a href="tel:112">112</a> ou le Spéléo Secours Français (<a href="tel:0800121123">0800 121 123</a>), préciser « accident de spéléologie » et lire le message de la sortie.';
+      c.appendChild(al);
+    } else {
+      const p = document.createElement('p');
+      p.className = 'meta';
+      p.innerHTML = 'Secours à déclencher dans <span class="count">' + dureeTxt(sd - now) + '</span>.';
+      c.appendChild(p);
+    }
+  }
+  if (s.statut === 'sortis' && s.sortie_reelle) {
+    const p = document.createElement('p');
+    p.className = 'meta';
+    p.textContent = 'Sortis de la cavité à ' + new Date(s.sortie_reelle).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + '.';
+    c.appendChild(p);
+  }
+
+  if (s.message) {
+    const d = document.createElement('details');
+    const su = document.createElement('summary');
+    su.textContent = 'Voir le message complet';
+    const pre = document.createElement('pre');
+    pre.textContent = s.message;
+    const tels = (s.participants || []).filter(p => p.tel).map(p => p.prenom + ' ' + p.nom + ' ' + p.tel);
+    if (tels.length) pre.textContent += '\n\nTéléphones des participants :\n' + tels.join('\n');
+    const urg = (s.participants || []).filter(p => p.urgence).map(p => p.prenom + ' ' + p.nom + ' : ' + p.urgence);
+    if (urg.length) pre.textContent += '\n\nPersonnes à prévenir :\n' + urg.join('\n');
+    const rr = document.createElement('div');
+    rr.className = 'r';
+    const cpb = document.createElement('button');
+    cpb.textContent = 'Copier le message';
+    cpb.onclick = async () => { try { await navigator.clipboard.writeText(s.message) } catch (e) {} };
+    rr.appendChild(cpb);
+    d.append(su, pre, rr);
+    c.appendChild(d);
+  }
+
+  const r = document.createElement('div');
+  r.className = 'r';
+  if (s.statut === 'prevue') {
+    const b1 = document.createElement('button');
+    b1.className = 'p';
+    b1.textContent = 'Nous entrons sous terre';
+    b1.onclick = () => majStatut(s.id, { statut: 'sous_terre', entree_reelle: new Date().toISOString() });
+    const b2 = document.createElement('button');
+    b2.textContent = 'Annuler la sortie';
+    b2.onclick = () => { if (confirm('Annuler cette sortie ?')) majStatut(s.id, { statut: 'annulee' }) };
+    r.append(b1, b2);
+  }
+  if (s.statut === 'sous_terre') {
+    const b = document.createElement('button');
+    b.className = 'ok';
+    b.textContent = 'Nous sommes sortis !';
+    b.onclick = () => majStatut(s.id, { statut: 'sortis', sortie_reelle: new Date().toISOString() });
+    r.append(b);
+  }
+  if (r.children.length) c.appendChild(r);
+  return c;
+}
+async function majStatut(id, patch) {
+  try {
+    await api('sorties?id=eq.' + id, { method: 'PATCH', headers: { 'Prefer': 'return=minimal' }, body: patch });
+    await loadSorties();
+  } catch (e) { showErr(e.message) }
+}
+async function loadSorties() {
+  if (!configured()) { $('actives').innerHTML = '<p class="s">Supabase n’est pas encore configuré (voir GUIDE.md).</p>'; return }
+  try {
+    sorties = await api('sorties?select=*&order=date_sortie.desc,created_at.desc&limit=50');
+  } catch (e) { showErr(e.message); return }
+  const act = sorties.filter(s => s.statut === 'prevue' || s.statut === 'sous_terre');
+  const fin = sorties.filter(s => s.statut === 'sortis').slice(0, 10);
+  const A = $('actives'), F = $('finies');
+  A.innerHTML = ''; F.innerHTML = '';
+  if (!act.length) A.innerHTML = '<p class="s">Aucune sortie en cours ni à venir.</p>';
+  act.forEach(s => A.appendChild(sortieCard(s)));
+  if (!fin.length) F.innerHTML = '<p class="s">Aucune sortie terminée pour l’instant.</p>';
+  fin.forEach(s => F.appendChild(sortieCard(s)));
+  $('lastRefresh').textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+$('reload').onclick = loadSorties;
+setInterval(() => { if (!$('tab-suivi').classList.contains('hid')) loadSorties() }, 60000);
+
+// ---------- Onglet membres ----------
+function renderMembres() {
+  const L = $('list');
+  L.innerHTML = '';
+  if (!membres.length) { L.innerHTML = '<p class="s">Aucun membre pour l’instant. Ajoute le premier ci-dessus.</p>'; return }
+  membres.forEach(m => {
+    const r = document.createElement('div');
+    r.className = 'm';
+    const s = document.createElement('span');
+    const a = age(m.date_naissance);
+    s.textContent = m.prenom + ' ' + m.nom;
+    const sm = document.createElement('small');
+    sm.textContent = ' ' + (a !== null ? a + ' ans, ' : '') + m.niveau + (m.telephone ? ', ' + m.telephone : '') + (m.callmebot_key ? ', alerte WhatsApp' : '') + (m.actif === false ? ' — inactif' : '');
+    s.appendChild(sm);
+    const e = document.createElement('button');
+    e.textContent = 'Modifier';
+    e.onclick = () => {
+      editId = m.id;
+      $('mfTitle').textContent = 'Modifier ' + m.prenom + ' ' + m.nom;
+      $('np').value = m.prenom; $('nn').value = m.nom;
+      $('nd').value = m.date_naissance || ''; $('nl').value = m.niveau;
+      $('nt').value = m.telephone || ''; $('nu').value = m.contact_urgence || '';
+      $('nc').value = m.callmebot_key || '';
+      $('add').textContent = 'Enregistrer';
+      $('cancelEdit').classList.remove('hid');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    const x = document.createElement('button');
+    x.textContent = 'Supprimer';
+    x.onclick = async () => {
+      if (!confirm('Supprimer ' + m.prenom + ' ' + m.nom + ' de la liste du club ?')) return;
+      try { await api('membres?id=eq.' + m.id, { method: 'DELETE' }); await loadMembres() }
+      catch (e2) { showErr(e2.message) }
+    };
+    r.append(s, e, x);
+    L.appendChild(r);
+  });
+}
+function resetMForm() {
+  editId = null;
+  $('mfTitle').textContent = 'Ajouter un membre';
+  ['np', 'nn', 'nd', 'nt', 'nu', 'nc'].forEach(i => $(i).value = '');
+  $('nl').value = 'Autonome';
+  $('add').textContent = 'Ajouter le membre';
+  $('cancelEdit').classList.add('hid');
+}
+$('cancelEdit').onclick = resetMForm;
+$('add').onclick = async () => {
+  if (!configured()) { showErr('Supabase n’est pas encore configuré (voir GUIDE.md).'); return }
+  const p = $('np').value.trim(), n = $('nn').value.trim();
+  if (!p || !n) { $('np').focus(); return }
+  const body = {
+    prenom: p, nom: n,
+    date_naissance: $('nd').value || null,
+    niveau: $('nl').value,
+    telephone: $('nt').value.trim(),
+    contact_urgence: $('nu').value.trim(),
+    callmebot_key: $('nc').value.trim()
+  };
+  try {
+    if (editId) await api('membres?id=eq.' + editId, { method: 'PATCH', headers: { 'Prefer': 'return=minimal' }, body: body });
+    else await api('membres', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: body });
+    resetMForm();
+    await loadMembres();
+  } catch (e) { showErr(e.message) }
+};
+async function loadMembres() {
+  if (!configured()) {
+    $('plist').innerHTML = '<p class="s">Supabase n’est pas encore configuré : ouvre GUIDE.md et suis les étapes.</p>';
+    $('list').innerHTML = '<p class="s">Supabase n’est pas encore configuré.</p>';
+    return;
+  }
+  try {
+    membres = await api('membres?select=*&order=nom.asc,prenom.asc');
+  } catch (e) { showErr(e.message); return }
+  [...sel].forEach(i => { if (!membres.some(m => m.id === i)) sel.delete(i) });
+  renderParticipants();
+  renderMembres();
+  gen();
+}
+
+// ---------- Onglet grottes ----------
+function renderGrottes() {
+  const L = $('glist');
+  L.innerHTML = '';
+  if (!grottes.length) { L.innerHTML = '<p class="s">Aucune grotte pour l’instant. Ajoute la première ci-dessus.</p>'; return }
+  grottes.forEach(g => {
+    const r = document.createElement('div');
+    r.className = 'm';
+    const s = document.createElement('span');
+    s.textContent = ((TYC[g.type_cavite] || 'la cavité') + ' ' + g.nom).replace(/^./, c => c.toUpperCase());
+    const sm = document.createElement('small');
+    sm.textContent = ' ' + [g.departement, g.profondeur, g.duree, g.difficulte, g.style].filter(Boolean).join(' · ');
+    s.appendChild(sm);
+    r.appendChild(s);
+    if (g.gps) {
+      const a = document.createElement('a');
+      a.href = 'https://maps.google.com/?q=' + encodeURIComponent(g.gps);
+      a.target = '_blank';
+      a.textContent = 'Carte';
+      r.appendChild(a);
+    }
+    const e = document.createElement('button');
+    e.textContent = 'Modifier';
+    e.onclick = () => {
+      editGId = g.id;
+      $('gfTitle').textContent = 'Modifier la fiche';
+      $('gtyp').value = g.type_cavite; $('gnom').value = g.nom;
+      $('gdep').value = g.departement || ''; $('gemp').value = g.emplacement || '';
+      $('ggps').value = g.gps || ''; $('gprof').value = g.profondeur || '';
+      $('gdur').value = g.duree || ''; $('gdif').value = g.difficulte || '';
+      $('gsty').value = g.style || ''; $('gnot').value = g.notes || '';
+      $('addG').textContent = 'Enregistrer';
+      $('cancelEditG').classList.remove('hid');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    const x = document.createElement('button');
+    x.textContent = 'Supprimer';
+    x.onclick = async () => {
+      if (!confirm('Supprimer la fiche de cette grotte ?')) return;
+      try { await api('grottes?id=eq.' + g.id, { method: 'DELETE' }); await loadGrottes() }
+      catch (e2) { showErr(e2.message) }
+    };
+    r.append(e, x);
+    L.appendChild(r);
+  });
+}
+function resetGForm() {
+  editGId = null;
+  $('gfTitle').textContent = 'Ajouter une grotte';
+  ['gnom', 'gdep', 'gemp', 'ggps', 'gprof', 'gdur', 'gnot'].forEach(i => $(i).value = '');
+  $('gtyp').value = 'grotte'; $('gdif').value = ''; $('gsty').value = '';
+  $('addG').textContent = 'Ajouter la grotte';
+  $('cancelEditG').classList.add('hid');
+}
+$('cancelEditG').onclick = resetGForm;
+$('addG').onclick = async () => {
+  if (!configured()) { showErr('Supabase n’est pas encore configuré (voir GUIDE.md).'); return }
+  const nom = $('gnom').value.trim();
+  if (!nom) { $('gnom').focus(); return }
+  const body = {
+    nom: nom,
+    type_cavite: $('gtyp').value,
+    departement: $('gdep').value.trim(),
+    emplacement: $('gemp').value.trim(),
+    gps: $('ggps').value.trim(),
+    profondeur: $('gprof').value.trim(),
+    duree: $('gdur').value.trim(),
+    difficulte: $('gdif').value,
+    style: $('gsty').value,
+    notes: $('gnot').value.trim()
+  };
+  try {
+    if (editGId) await api('grottes?id=eq.' + editGId, { method: 'PATCH', headers: { 'Prefer': 'return=minimal' }, body: body });
+    else await api('grottes', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: body });
+    resetGForm();
+    await loadGrottes();
+  } catch (e) { showErr(e.message) }
+};
+async function loadGrottes() {
+  if (!configured()) { $('glist').innerHTML = '<p class="s">Supabase n’est pas encore configuré.</p>'; return }
+  try { grottes = await api('grottes?select=*&order=nom.asc') }
+  catch (e) { showErr(e.message); return }
+  renderGrottes();
+  renderGrotteSel();
+  gen();
+}
+
+// ---------- Onglet vehicules ----------
+function renderVehicules() {
+  const L = $('vlist');
+  L.innerHTML = '';
+  if (!vehicules.length) { L.innerHTML = '<p class="s">Aucun véhicule pour l’instant. Ajoute le premier ci-dessus.</p>'; return }
+  vehicules.forEach(w => {
+    const r = document.createElement('div');
+    r.className = 'm';
+    const s = document.createElement('span');
+    s.textContent = w.modele + (w.couleur ? ' ' + w.couleur : '');
+    const sm = document.createElement('small');
+    sm.textContent = ' ' + [w.immatriculation, w.proprietaire].filter(Boolean).join(' — ');
+    s.appendChild(sm);
+    const e = document.createElement('button');
+    e.textContent = 'Modifier';
+    e.onclick = () => {
+      editVId = w.id;
+      $('vfTitle').textContent = 'Modifier ' + w.modele;
+      $('vmod').value = w.modele; $('vimm').value = w.immatriculation || '';
+      $('vcou').value = w.couleur || ''; $('vpro').value = w.proprietaire || '';
+      $('addV').textContent = 'Enregistrer';
+      $('cancelEditV').classList.remove('hid');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    const x = document.createElement('button');
+    x.textContent = 'Supprimer';
+    x.onclick = async () => {
+      if (!confirm('Supprimer ' + w.modele + ' ?')) return;
+      try { await api('vehicules?id=eq.' + w.id, { method: 'DELETE' }); await loadVehicules() }
+      catch (e2) { showErr(e2.message) }
+    };
+    r.append(s, e, x);
+    L.appendChild(r);
+  });
+}
+function resetVForm() {
+  editVId = null;
+  $('vfTitle').textContent = 'Ajouter un véhicule';
+  ['vmod', 'vimm', 'vcou', 'vpro'].forEach(i => $(i).value = '');
+  $('addV').textContent = 'Ajouter le véhicule';
+  $('cancelEditV').classList.add('hid');
+}
+$('cancelEditV').onclick = resetVForm;
+$('addV').onclick = async () => {
+  if (!configured()) { showErr('Supabase n’est pas encore configuré (voir GUIDE.md).'); return }
+  const mod = $('vmod').value.trim();
+  if (!mod) { $('vmod').focus(); return }
+  const body = {
+    modele: mod,
+    immatriculation: $('vimm').value.trim(),
+    couleur: $('vcou').value.trim(),
+    proprietaire: $('vpro').value.trim()
+  };
+  try {
+    if (editVId) await api('vehicules?id=eq.' + editVId, { method: 'PATCH', headers: { 'Prefer': 'return=minimal' }, body: body });
+    else await api('vehicules', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: body });
+    resetVForm();
+    await loadVehicules();
+  } catch (e) { showErr(e.message) }
+};
+async function loadVehicules() {
+  if (!configured()) { $('vlist').innerHTML = '<p class="s">Supabase n’est pas encore configuré.</p>'; return }
+  try { vehicules = await api('vehicules?select=*&order=modele.asc') }
+  catch (e) { showErr(e.message); return }
+  [...selV].forEach(i => { if (!vehicules.some(w => w.id === i)) selV.delete(i) });
+  renderVehicules();
+  renderVehSel();
+  gen();
+}
+
+// ---------- Initialisation ----------
+document.querySelectorAll('#tab-sortie input, #tab-sortie select').forEach(e => {
+  e.addEventListener('input', () => {
+    if (e.id === 'club') { try { localStorage.setItem('sq_c', e.value) } catch (x) {} }
+    gen();
+  });
+});
+$('mh').addEventListener('change', () => { $('spec').style.display = $('mh').checked ? 'block' : 'none' });
+$('sb').addEventListener('change', () => { $('blq').style.display = $('sb').checked ? 'block' : 'none' });
+$('dts').value = new Date().toISOString().slice(0, 10);
+try { $('club').value = localStorage.getItem('sq_c') || CONFIG.CLUB } catch (e) { $('club').value = CONFIG.CLUB }
+gate();
+applyRole();
+if (session) { loadMembres(); loadGrottes(); loadVehicules(); }
+gen();
+</script>
+</body>
+</html>
