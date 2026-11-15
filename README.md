@@ -45,8 +45,8 @@ Application web libre de **déclaration des sorties spéléo** avec suivi « son
 
 ### 4. (Option) Rappel automatique par email et WhatsApp
 
-1. Dans `workflow-rappel-sonnette.json`, remplacez les valeurs `VOTRE-PROJET`, `VOTRE_CLE_PUBLISHABLE`, `EXPEDITEUR@example.org` et `VOTRE-SITE-SONNETTE.example.org`.
-2. Dans n8n, créez un credential **Header Auth** (Credentials → Add credential) : Name `Authorization`, Value `Bearer ` suivi de la **clé secrète** de votre projet Supabase (Project Settings → API Keys, clé `sb_secret_…` / service_role — elle ne sort jamais de n8n et n'apparaît dans aucun fichier).
+1. Dans `workflow-rappel-sonnette.json`, remplacez les valeurs `VOTRE-PROJET`, `EXPEDITEUR@example.org` et `VOTRE-SITE-SONNETTE.example.org`.
+2. Dans n8n, créez un credential **Header Auth** (Credentials → Add credential) : Name `apikey`, Value la **clé secrète** de votre projet Supabase (Project Settings → API Keys, clé `sb_secret_…`), telle quelle, sans préfixe. Elle ne sort jamais de n8n et n'apparaît dans aucun fichier. (Les clés `sb_secret_…` ne sont pas des JWT : Supabase les attend dans l'en-tête `apikey`, pas dans `Authorization`.)
 3. **Import from File**, puis attachez ce credential aux nœuds « Reglages alertes », « Canaux d'alerte », « Sorties sous terre », « Membres alerte » et « Marquer alertee », choisissez votre credential SMTP sur « Email d'alerte », et activez. Les destinataires des emails et l'activation des branches email/WhatsApp se règlent ensuite directement dans l'app (onglet Alertes).
 3. Pour la branche WhatsApp : chaque personne du cercle d'alerte s'enregistre sur [CallMeBot](https://www.callmebot.com/blog/free-api-whatsapp-messages/) (gratuit, une fois) et l'admin colle sa clé dans sa fiche membre, champ « Clé CallMeBot ». Le workflow lit les clés directement dans la base. Conseil : réservez l'alerte à un petit cercle (initiateurs, sonnettes habituelles) — une alerte reçue par peu de gens qui savent quoi faire vaut mieux qu'une liste de diffusion.
 

@@ -34,15 +34,6 @@
         "url": "https://VOTRE-PROJET.supabase.co/rest/v1/reglages?id=eq.1&select=*",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "VOTRE_CLE_PUBLISHABLE"
-            }
-          ]
-        },
         "options": {}
       }
     },
@@ -61,15 +52,6 @@
         "url": "https://VOTRE-PROJET.supabase.co/rest/v1/canaux_alerte?select=nom,valeur&order=created_at.asc",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "VOTRE_CLE_PUBLISHABLE"
-            }
-          ]
-        },
         "options": {}
       }
     },
@@ -87,15 +69,6 @@
         "url": "https://VOTRE-PROJET.supabase.co/rest/v1/sorties?statut=eq.sous_terre&alerte_envoyee=is.null&select=*",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "VOTRE_CLE_PUBLISHABLE"
-            }
-          ]
-        },
         "options": {}
       }
     },
@@ -158,15 +131,6 @@
         "url": "https://VOTRE-PROJET.supabase.co/rest/v1/membres?select=prenom,nom,telephone,callmebot_key&actif=eq.true",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "VOTRE_CLE_PUBLISHABLE"
-            }
-          ]
-        },
         "options": {}
       }
     },
@@ -230,10 +194,6 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "VOTRE_CLE_PUBLISHABLE"
-            },
             {
               "name": "Prefer",
               "value": "return=minimal"
