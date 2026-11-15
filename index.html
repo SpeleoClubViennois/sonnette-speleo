@@ -170,7 +170,7 @@ input.tph{cursor:pointer;caret-color:transparent}
 <div id="tab-suivi" class="hid">
 <section>
 <h2>Sorties en cours et à venir</h2>
-<p class="s">La sonnette surveille cette page. Si l'heure de secours est dépassée sans nouvelle de l'équipe : appeler le 112 et demander le Spéléo Secours Français, en lisant le message de la sortie.</p>
+<p class="s">La sonnette surveille cette page. Si l'heure de secours est dépassée sans nouvelle de l'équipe : déclarer l'alerte sur <a href="https://ssfalert.fr" target="_blank">ssfalert.fr</a> (Spéléo Secours Français) ou appeler le 112, en lisant le message de la sortie.</p>
 <div class="r" style="margin:0 0 12px"><button id="reload">Actualiser</button><span class="s" id="lastRefresh" style="margin:0"></span></div>
 <div id="actives"></div>
 <h2 style="margin-top:20px">Dernières sorties terminées</h2>
@@ -465,7 +465,7 @@ function gen() {
   if (t.length) o.push(t.join(', ').replace(/^./, c => c.toUpperCase()) + '.');
   const sm = membres.find(z => z.id === $('sq').value);
   if (sm) o.push('Sonnette : ' + sm.prenom + ' ' + sm.nom + (sm.telephone ? ', ' + sm.telephone : '') + '.');
-  if (v('hr')) o.push('Secours à déclencher à ' + hh(v('hr')) + ', uniquement par la sonnette.');
+  if (v('hr')) o.push('Secours à déclencher à ' + hh(v('hr')) + ', uniquement par la sonnette (ssfalert.fr ou 112).');
   $('msg').value = o.join('\n\n');
   $('sqWarn').textContent = (sm && sel.has(sm.id)) ? 'Attention : la sonnette fait partie des participants. Elle doit rester en surface.' : '';
   const enc = parts.some(m => m.niveau === 'Initiateur' || m.niveau === 'Moniteur');
@@ -781,7 +781,7 @@ function sortieCard(s) {
     if (now > sd) {
       const al = document.createElement('div');
       al.className = 'alerte';
-      al.innerHTML = '<div class="big">HEURE DE SECOURS DÉPASSÉE de ' + dureeTxt(now - sd) + '</div>1. Essayer de joindre les participants (numéros dans le message ci-dessous).<br>2. Sans nouvelle : appeler le <a href="tel:112">112</a> ou le Spéléo Secours Français (<a href="tel:0800121123">0800 121 123</a>), préciser « accident de spéléologie » et lire le message de la sortie.';
+      al.innerHTML = '<div class="big">HEURE DE SECOURS DÉPASSÉE de ' + dureeTxt(now - sd) + '</div>1. Essayer de joindre les participants (numéros dans le message ci-dessous).<br>2. Sans nouvelle : déclarer l’alerte sur <a href="https://ssfalert.fr" target="_blank">ssfalert.fr</a>, ou appeler le <a href="tel:112">112</a> / Spéléo Secours Français (<a href="tel:0800121123">0800 121 123</a>) en précisant « accident de spéléologie » — et lire le message de la sortie.';
       c.appendChild(al);
     } else {
       const p = document.createElement('p');
