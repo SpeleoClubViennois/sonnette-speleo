@@ -158,6 +158,7 @@ input.tph{cursor:pointer;caret-color:transparent}
 <button id="wa">Envoyer sur WhatsApp</button>
 <span id="ok" aria-live="polite"></span>
 </div>
+<p class="s hid" id="editBanner" style="margin:10px 0 0;color:var(--wr)"><span id="editBannerTxt"></span> <button id="cancelEditS" style="margin-left:6px">Abandonner la modification</button></p>
 <div class="r" style="margin-top:14px">
 <button class="ok" id="save">Déclarer la sortie</button>
 <span id="saveInfo" class="s" style="margin:0"></span>
@@ -688,6 +689,55 @@ function materielTxt() {
   if ($('mk').checked) mt.push('kit secours club');
   return mt.join(' ; ');
 }
+let editSId = null;
+function resetEditSortie() {
+  editSId = null;
+  $('save').textContent = 'Déclarer la sortie';
+  $('editBanner').classList.add('hid');
+}
+$('cancelEditS').onclick = resetEditSortie;
+function editSortie(s) {
+  editSId = s.id;
+  $('dts').value = s.date_sortie || '';
+  $('typc').value = s.type_cavite || 'grotte';
+  $('cav').value = s.nom_cavite || '';
+  $('dep').value = s.departement || '';
+  $('obj').value = s.objectif || '';
+  $('club').value = s.club || '';
+  $('ext').value = s.nb_exterieurs || '';
+  $('typ').value = s.type_sortie || '';
+  $('conn').value = s.connaissance || '';
+  const mat = s.materiel || '';
+  $('mh').checked = mat.indexOf('spécifique') !== -1;
+  $('mc').checked = mat.indexOf('harnais complet') !== -1;
+  $('mk').checked = mat.indexOf('kit secours club') !== -1;
+  document.querySelectorAll('#spec .sp').forEach(e => e.checked = mat.indexOf(e.dataset.l) !== -1);
+  $('gsel').value = s.grotte_id || '';
+  sel.clear();
+  (s.participants || []).forEach(p => {
+    const m = membres.find(z => z.id === p.id || (z.prenom === p.prenom && z.nom === p.nom));
+    if (m) sel.add(m.id);
+  });
+  renderParticipants();
+  const sm = membres.find(z => (z.prenom + ' ' + z.nom) === s.sonnette_nom);
+  $('sq').value = sm ? sm.id : '';
+  selV.clear(); $('car').value = ''; $('plq').value = '';
+  (s.vehicules || []).forEach(w => {
+    const m = vehicules.find(z => z.modele === w.modele && (z.immatriculation || '') === (w.plaque || ''));
+    if (m) selV.add(m.id);
+    else if (!$('car').value) { $('car').value = w.modele || ''; $('plq').value = w.plaque || '' }
+  });
+  renderVehSel();
+  $('he').value = s.heure_entree ? s.heure_entree.slice(0, 5) : '';
+  $('hs2').value = s.heure_sortie_prevue ? s.heure_sortie_prevue.slice(0, 5) : '';
+  $('hr').value = s.heure_secours ? s.heure_secours.slice(0, 5) : '';
+  gen();
+  $('save').textContent = 'Enregistrer les modifications';
+  $('editBannerTxt').textContent = 'Modification de la sortie du ' + dateFr(s.date_sortie) + ' — ' + (s.nom_cavite || '?') + ' (statut : ' + (STATUT[s.statut] || s.statut) + '). Le statut ne change pas.';
+  $('editBanner').classList.remove('hid');
+  showTab('sortie');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 $('save').onclick = async () => {
   if (!configured()) { showErr('Supabase n’est pas encore configuré (voir GUIDE.md).'); return }
   const v = id => $(id).value.trim();
@@ -705,10 +755,7 @@ $('save').onclick = async () => {
   gen();
   $('save').disabled = true;
   try {
-    await api('sorties', {
-      method: 'POST',
-      headers: { 'Prefer': 'return=minimal' },
-      body: {
+    const body = {
         date_sortie: v('dts') || new Date().toISOString().slice(0, 10),
         type_cavite: $('typc').value,
         nom_cavite: v('cav'),
@@ -730,9 +777,16 @@ $('save').onclick = async () => {
         participants: parts.map(m => ({ id: m.id, prenom: m.prenom, nom: m.nom, niveau: m.niveau, age: age(m.date_naissance), tel: m.telephone || '', urgence: m.contact_urgence || '' })),
         message: $('msg').value,
         statut: 'prevue'
-      }
-    });
-    $('saveInfo').textContent = 'Sortie déclarée.';
+    };
+    if (editSId) {
+      delete body.statut; // le statut ne change pas lors d'une modification
+      await api('sorties?id=eq.' + editSId, { method: 'PATCH', headers: { 'Prefer': 'return=minimal' }, body: body });
+      resetEditSortie();
+      $('saveInfo').textContent = 'Sortie modifiée.';
+    } else {
+      await api('sorties', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: body });
+      $('saveInfo').textContent = 'Sortie déclarée.';
+    }
     setTimeout(() => $('saveInfo').textContent = '', 3000);
     showTab('suivi');
   } catch (e) {
@@ -850,22 +904,34 @@ function sortieCard(s) {
 
   const r = document.createElement('div');
   r.className = 'r';
+  const btnMod = () => {
+    const b = document.createElement('button');
+    b.textContent = 'Modifier';
+    b.onclick = () => editSortie(s);
+    return b;
+  };
+  const btnAnn = () => {
+    const b = document.createElement('button');
+    b.textContent = 'Annuler la sortie';
+    b.onclick = () => { if (confirm('Marquer cette sortie comme annulée ? Elle disparaîtra du suivi mais restera archivée dans le journal du club (rien n’est jamais supprimé).')) majStatut(s.id, { statut: 'annulee' }) };
+    return b;
+  };
   if (s.statut === 'prevue') {
     const b1 = document.createElement('button');
     b1.className = 'p';
     b1.textContent = 'Nous entrons sous terre';
     b1.onclick = () => majStatut(s.id, { statut: 'sous_terre', entree_reelle: new Date().toISOString() });
-    const b2 = document.createElement('button');
-    b2.textContent = 'Annuler la sortie';
-    b2.onclick = () => { if (confirm('Annuler cette sortie ?')) majStatut(s.id, { statut: 'annulee' }) };
-    r.append(b1, b2);
+    r.append(b1, btnMod(), btnAnn());
   }
   if (s.statut === 'sous_terre') {
     const b = document.createElement('button');
     b.className = 'ok';
     b.textContent = 'Nous sommes sortis !';
     b.onclick = () => majStatut(s.id, { statut: 'sortis', sortie_reelle: new Date().toISOString() });
-    r.append(b);
+    r.append(b, btnMod(), btnAnn());
+  }
+  if (s.statut === 'sortis') {
+    r.append(btnMod(), btnAnn());
   }
   if (r.children.length) c.appendChild(r);
   return c;
