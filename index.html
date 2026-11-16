@@ -267,7 +267,7 @@ input.tph{cursor:pointer;caret-color:transparent}
 <div><label for="vmod">Modèle</label><input id="vmod" placeholder="Dacia Duster"></div>
 <div><label for="vimm">Immatriculation</label><input id="vimm" placeholder="AB-123-CD"></div>
 <div><label for="vcou">Couleur</label><input id="vcou"></div>
-<div><label for="vpro">Propriétaire</label><input id="vpro"></div>
+<div><label for="vpro">Propriétaire</label><select id="vpro"><option value="">—</option><option>Le club</option></select></div>
 </div>
 <div class="r">
 <button class="p" id="addV">Ajouter le véhicule</button>
@@ -972,6 +972,7 @@ async function loadMembres() {
   [...sel].forEach(i => { if (!membres.some(m => m.id === i)) sel.delete(i) });
   renderParticipants();
   renderMembres();
+  majProprioOptions();
   gen();
 }
 
@@ -1063,6 +1064,23 @@ async function loadGrottes() {
 }
 
 // ---------- Onglet vehicules ----------
+function majProprioOptions(keep) {
+  const q = $('vpro'), pv = keep !== undefined ? keep : q.value;
+  q.innerHTML = '<option value="">—</option><option>Le club</option>';
+  membres.filter(m => m.actif !== false)
+    .slice().sort((a, b) => (a.prenom + ' ' + a.nom).localeCompare(b.prenom + ' ' + b.nom, 'fr'))
+    .forEach(m => {
+      const o = document.createElement('option');
+      o.textContent = m.prenom + ' ' + m.nom;
+      q.appendChild(o);
+    });
+  if (pv && ![...q.options].some(o => o.value === pv)) {
+    const o = document.createElement('option');
+    o.textContent = pv;
+    q.appendChild(o);
+  }
+  q.value = pv || '';
+}
 function renderVehicules() {
   const L = $('vlist');
   L.innerHTML = '';
@@ -1081,7 +1099,7 @@ function renderVehicules() {
       editVId = w.id;
       $('vfTitle').textContent = 'Modifier ' + w.modele;
       $('vmod').value = w.modele; $('vimm').value = w.immatriculation || '';
-      $('vcou').value = w.couleur || ''; $('vpro').value = w.proprietaire || '';
+      $('vcou').value = w.couleur || ''; majProprioOptions(w.proprietaire || '');
       $('addV').textContent = 'Enregistrer';
       $('cancelEditV').classList.remove('hid');
       window.scrollTo({ top: 0, behavior: 'smooth' });
