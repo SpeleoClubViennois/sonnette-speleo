@@ -200,6 +200,12 @@ input.tph{cursor:pointer;caret-color:transparent}
 </section>
 <section>
 <h2>Membres du club</h2>
+<div class="r" style="margin:0 0 10px">
+<select id="fNiv" style="width:auto"><option value="">Tous les niveaux</option><option>Débutant</option><option>Initié</option><option>Autonome</option><option>Confirmé</option><option>Initiateur</option><option>Moniteur</option></select>
+<label class="ck"><input type="checkbox" id="fCar">A une voiture</label>
+<label class="ck"><input type="checkbox" id="fBot">Clé CallMeBot</label>
+<span class="s" id="fCount" style="margin:0"></span>
+</div>
 <div id="list"><p class="s">Chargement…</p></div>
 </section>
 </div>
@@ -961,18 +967,30 @@ $('reload').onclick = loadSorties;
 setInterval(() => { if (!$('tab-suivi').classList.contains('hid')) loadSorties() }, 60000);
 
 // ---------- Onglet membres ----------
+function voituresDe(m) {
+  const nom = m.prenom + ' ' + m.nom;
+  return vehicules.filter(w => (w.proprietaire || '').trim() === nom);
+}
 function renderMembres() {
   const L = $('list');
   L.innerHTML = '';
-  if (!membres.length) { L.innerHTML = '<p class="s">Aucun membre pour l’instant. Ajoute le premier ci-dessus.</p>'; return }
-  membres.forEach(m => {
+  if (!membres.length) { $('fCount').textContent = ''; L.innerHTML = '<p class="s">Aucun membre pour l’instant. Ajoute le premier ci-dessus.</p>'; return }
+  const fn = $('fNiv').value, fc = $('fCar').checked, fb = $('fBot').checked;
+  const list = membres.filter(m =>
+    (!fn || m.niveau === fn) &&
+    (!fc || voituresDe(m).length) &&
+    (!fb || (m.callmebot_key || '').trim() !== ''));
+  $('fCount').textContent = (fn || fc || fb) ? list.length + ' membre' + (list.length > 1 ? 's' : '') + ' sur ' + membres.length : membres.length + ' membres';
+  if (!list.length) { L.innerHTML = '<p class="s">Aucun membre ne correspond aux filtres.</p>'; return }
+  list.forEach(m => {
     const r = document.createElement('div');
     r.className = 'm';
     const s = document.createElement('span');
     const a = age(m.date_naissance);
     s.textContent = m.prenom + ' ' + m.nom;
     const sm = document.createElement('small');
-    sm.textContent = ' ' + (a !== null ? a + ' ans, ' : '') + m.niveau + (m.telephone ? ', ' + m.telephone : '') + (m.callmebot_key ? ', alerte WhatsApp' : '') + (m.actif === false ? ' — inactif' : '');
+    const voit = voituresDe(m);
+    sm.textContent = ' ' + (a !== null ? a + ' ans, ' : '') + m.niveau + (m.telephone ? ', ' + m.telephone : '') + (m.callmebot_key ? ', alerte WhatsApp' : '') + (voit.length ? ', ' + voit.map(w => w.modele).join(' + ') : '') + (m.actif === false ? ' — inactif' : '');
     s.appendChild(sm);
     const e = document.createElement('button');
     e.textContent = 'Modifier';
@@ -998,6 +1016,7 @@ function renderMembres() {
     L.appendChild(r);
   });
 }
+['fNiv', 'fCar', 'fBot'].forEach(i => $(i).onchange = renderMembres);
 function resetMForm() {
   editId = null;
   $('mfTitle').textContent = 'Ajouter un membre';
@@ -1213,6 +1232,7 @@ async function loadVehicules() {
   [...selV].forEach(i => { if (!vehicules.some(w => w.id === i)) selV.delete(i) });
   renderVehicules();
   renderVehSel();
+  renderMembres(); // le filtre « A une voiture » et les voitures affichées dependent des vehicules
   gen();
 }
 
