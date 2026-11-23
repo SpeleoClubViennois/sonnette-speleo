@@ -153,3 +153,13 @@ create policy "canaux_select" on canaux_alerte for select to authenticated using
 create policy "canaux_insert" on canaux_alerte for insert to authenticated with check (is_admin());
 create policy "canaux_update" on canaux_alerte for update to authenticated using (is_admin());
 create policy "canaux_delete" on canaux_alerte for delete to authenticated using (is_admin());
+
+-- 9. Documents des grottes (topos, photos, PDF) : bucket Storage prive.
+--    Lecture : tous les connectes. Ajout/suppression : admin uniquement.
+insert into storage.buckets (id, name, public, file_size_limit)
+select 'grottes', 'grottes', false, 10485760   -- 10 Mo max par fichier
+where not exists (select 1 from storage.buckets where id = 'grottes');
+
+create policy "grottes_docs_select" on storage.objects for select to authenticated using (bucket_id = 'grottes');
+create policy "grottes_docs_insert" on storage.objects for insert to authenticated with check (bucket_id = 'grottes' and public.is_admin());
+create policy "grottes_docs_delete" on storage.objects for delete to authenticated using (bucket_id = 'grottes' and public.is_admin());

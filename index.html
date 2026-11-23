@@ -61,6 +61,10 @@ input.tph{cursor:pointer;caret-color:transparent}
 .role-membre #tabBtn-membres,.role-membre #tabBtn-vehicules,.role-membre #tabBtn-alertes{display:none}
 .role-membre #tab-grottes section:first-of-type{display:none}
 .role-membre #glist button{display:none}
+.role-membre #glist button.docbtn{display:inline-block}
+.role-membre #glist .adminonly{display:none}
+.gdocs{margin:-4px 0 12px 14px;font-size:.92rem}
+.gdocs summary{cursor:pointer;color:var(--mut)}
 #tpOv{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:60}
 #tp{background:var(--card);border:1px solid var(--bd);border-radius:14px 14px 0 0;width:100%;max-width:360px;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px))}
 @media(min-width:600px){#tpOv{align-items:center}#tp{border-radius:14px}}
@@ -346,6 +350,25 @@ async function api(path, opts) {
   if (res.status === 204) return null;
   const txt = await res.text();
   return txt ? JSON.parse(txt) : null;
+}
+async function storageApi(path, opts) {
+  opts = opts || {};
+  const tok = await authToken();
+  const res = await fetch(CONFIG.SUPABASE_URL + '/storage/v1/' + path, {
+    method: opts.method || 'GET',
+    headers: Object.assign({
+      'apikey': CONFIG.SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + (tok || CONFIG.SUPABASE_ANON_KEY)
+    }, opts.headers || {}),
+    body: opts.body
+  });
+  if (res.status === 401) { saveSession(null); gate(); throw new Error('Session expirée : reconnecte-toi.') }
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.json()).message || '' } catch (e) {}
+    throw new Error('Erreur Storage (' + res.status + ') ' + detail);
+  }
+  return res;
 }
 function showErr(msg) {
   const e = $('err');
@@ -1109,7 +1132,91 @@ function renderGrottes() {
     };
     r.append(e, x);
     L.appendChild(r);
+    const dd = document.createElement('details');
+    dd.className = 'gdocs';
+    const su = document.createElement('summary');
+    su.textContent = 'Documents (topo, photos, PDF)';
+    const inner = document.createElement('div');
+    dd.append(su, inner);
+    let docsLoaded = false;
+    dd.ontoggle = () => { if (dd.open && !docsLoaded) { docsLoaded = true; loadDocs(g, inner) } };
+    L.appendChild(dd);
   });
+}
+async function loadDocs(g, box) {
+  box.innerHTML = '<p class="s">Chargement…</p>';
+  let files = [];
+  try {
+    const res = await storageApi('object/list/grottes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prefix: g.id + '/', limit: 100, sortBy: { column: 'name', order: 'asc' } })
+    });
+    files = (await res.json()).filter(f => f.id);
+  } catch (e) { box.innerHTML = ''; box.appendChild(document.createElement('p')).textContent = 'Documents indisponibles : ' + e.message; return }
+  box.innerHTML = '';
+  if (!files.length) {
+    const p = document.createElement('p');
+    p.className = 's';
+    p.textContent = 'Aucun document pour cette grotte.';
+    box.appendChild(p);
+  }
+  files.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'm';
+    const sp = document.createElement('span');
+    sp.textContent = f.name.replace(/^\d+_/, '');
+    const v = document.createElement('button');
+    v.className = 'docbtn';
+    v.textContent = 'Voir';
+    v.onclick = async () => {
+      const w = window.open('about:blank', '_blank'); // ouvert tout de suite pour ne pas etre bloque
+      v.disabled = true;
+      try {
+        const r2 = await storageApi('object/authenticated/grottes/' + g.id + '/' + encodeURIComponent(f.name));
+        const u = URL.createObjectURL(await r2.blob());
+        if (w) w.location = u; else window.open(u, '_blank');
+      } catch (e) { if (w) w.close(); showErr(e.message) }
+      v.disabled = false;
+    };
+    const d = document.createElement('button');
+    d.textContent = 'Supprimer';
+    d.onclick = async () => {
+      if (!confirm('Supprimer le document « ' + f.name.replace(/^\d+_/, '') + ' » ?')) return;
+      try { await storageApi('object/grottes/' + g.id + '/' + encodeURIComponent(f.name), { method: 'DELETE' }); loadDocs(g, box) }
+      catch (e) { showErr(e.message) }
+    };
+    row.append(sp, v, d);
+    box.appendChild(row);
+  });
+  const up = document.createElement('div');
+  up.className = 'adminonly r';
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*,application/pdf,.pdf';
+  inp.style.width = 'auto';
+  const bu = document.createElement('button');
+  bu.textContent = 'Ajouter ce document';
+  bu.onclick = async () => {
+    const f = inp.files && inp.files[0];
+    if (!f) { showErr('Choisis d’abord un fichier (photo ou PDF).'); return }
+    if (f.size > 10 * 1024 * 1024) { showErr('Fichier trop lourd : 10 Mo maximum.'); return }
+    bu.disabled = true;
+    bu.textContent = 'Envoi…';
+    try {
+      const safe = f.name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
+      await storageApi('object/grottes/' + g.id + '/' + Date.now() + '_' + safe, {
+        method: 'POST',
+        headers: { 'Content-Type': f.type || 'application/octet-stream' },
+        body: f
+      });
+      loadDocs(g, box);
+    } catch (e) { showErr(e.message) }
+    bu.disabled = false;
+    bu.textContent = 'Ajouter ce document';
+  };
+  up.append(inp, bu);
+  box.appendChild(up);
 }
 function resetGForm() {
   editGId = null;
