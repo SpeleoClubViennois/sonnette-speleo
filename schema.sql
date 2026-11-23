@@ -25,7 +25,7 @@ create table if not exists vehicules (
   id uuid primary key default gen_random_uuid(),
   modele text not null,
   immatriculation text not null default '',
-  couleur text default '',
+  options text default '',                 -- coffre de toit, attelage, 7 places...
   proprietaire text default '',
   actif boolean not null default true,
   created_at timestamptz not null default now()

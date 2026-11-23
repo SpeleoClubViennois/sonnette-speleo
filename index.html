@@ -141,7 +141,7 @@ input.tph{cursor:pointer;caret-color:transparent}
 <label class="ck"><input type="checkbox" id="mc">Harnais complet (matériel personnel pour descendre sur corde et évoluer dans la grotte)</label>
 <label class="ck"><input type="checkbox" id="mk">Kit secours club (collectif)</label></div>
 <div class="w"><label>Véhicules au parking (coche ceux présents)</label><div id="vsel"></div>
-<label for="car" style="margin-top:8px">Autre véhicule (modèle, couleur)</label><input id="car"><label for="plq" style="margin-top:8px">Plaque de l'autre véhicule</label><input id="plq"></div>
+<label for="car" style="margin-top:8px">Autre véhicule (modèle)</label><input id="car"><label for="plq" style="margin-top:8px">Plaque de l'autre véhicule</label><input id="plq"></div>
 <div><label for="he">Entrée prévue</label><input id="he" type="text" class="tph" readonly inputmode="none" placeholder="--:--"></div>
 <div><label for="hs2">Sortie prévue</label><input id="hs2" type="text" class="tph" readonly inputmode="none" placeholder="--:--"></div>
 <div><label for="hr">Secours à déclencher à</label><input id="hr" type="text" class="tph" readonly inputmode="none" placeholder="--:--"><p class="s" id="hrHint" style="margin:2px 0 0;font-size:.78rem"></p></div>
@@ -273,7 +273,7 @@ input.tph{cursor:pointer;caret-color:transparent}
 <div class="g">
 <div><label for="vmod">Modèle</label><input id="vmod" placeholder="Dacia Duster"></div>
 <div><label for="vimm">Immatriculation</label><input id="vimm" placeholder="AB-123-CD"></div>
-<div><label for="vcou">Couleur</label><input id="vcou"></div>
+<div><label for="vopt">Options (coffre de toit, attelage…)</label><input id="vopt" placeholder="coffre de toit"></div>
 <div><label for="vpro">Propriétaire</label><select id="vpro"><option value="">—</option><option>Le club</option></select></div>
 </div>
 <div class="r">
@@ -494,7 +494,7 @@ function gen() {
   const mb = [];
   if (mt.length) mb.push('Matériel : ' + mt.join(' ; ') + '.');
   const vs = selVehicules();
-  if (vs.length) o.push('Voiture' + (vs.length > 1 ? 's' : '') + ' au parking : ' + vs.map(w => [w.modele, w.couleur].filter(Boolean).join(' ') + (w.plaque ? ' (' + w.plaque + ')' : '')).join(' ; ') + '.');
+  if (vs.length) o.push('Voiture' + (vs.length > 1 ? 's' : '') + ' au parking : ' + vs.map(w => w.modele + ((w.plaque || w.options) ? ' (' + [w.plaque, w.options].filter(Boolean).join(', ') + ')' : '')).join(' ; ') + '.');
   if (v('conn')) mb.push(v('conn') + '.');
   if (mb.length) o.push(mb.join('\n'));
   const t = [];
@@ -547,8 +547,8 @@ function renderParticipants() {
 // ---------- Vehicules et grotte dans le formulaire de sortie ----------
 function selVehicules() {
   const v = id => $(id).value.trim();
-  const out = vehicules.filter(w => selV.has(w.id)).map(w => ({ modele: w.modele, plaque: w.immatriculation || '', couleur: w.couleur || '', proprietaire: w.proprietaire || '' }));
-  if (v('car') || v('plq')) out.push({ modele: v('car'), plaque: v('plq'), couleur: '', proprietaire: '' });
+  const out = vehicules.filter(w => selV.has(w.id)).map(w => ({ modele: w.modele, plaque: w.immatriculation || '', options: w.options || '', proprietaire: w.proprietaire || '' }));
+  if (v('car') || v('plq')) out.push({ modele: v('car'), plaque: v('plq'), options: '', proprietaire: '' });
   return out;
 }
 function renderVehSel() {
@@ -565,9 +565,9 @@ function renderVehSel() {
     c.setAttribute('aria-label', 'Au parking : ' + w.modele);
     c.onchange = () => { c.checked ? selV.add(w.id) : selV.delete(w.id); gen() };
     const s = document.createElement('span');
-    s.textContent = w.modele + (w.couleur ? ' ' + w.couleur : '');
+    s.textContent = w.modele;
     const sm = document.createElement('small');
-    sm.textContent = ' ' + [w.immatriculation, w.proprietaire].filter(Boolean).join(' — ');
+    sm.textContent = ' ' + [w.immatriculation, w.proprietaire, w.options].filter(Boolean).join(' — ');
     s.appendChild(sm);
     r.append(c, s);
     L.appendChild(r);
@@ -852,7 +852,7 @@ function sortieCard(s) {
   if ((s.vehicules || []).length) {
     const m4 = document.createElement('p');
     m4.className = 'meta';
-    m4.textContent = 'Voiture' + (s.vehicules.length > 1 ? 's' : '') + ' au parking : ' + s.vehicules.map(w => [w.modele, w.couleur].filter(Boolean).join(' ') + (w.plaque ? ' (' + w.plaque + ')' : '')).join(' ; ');
+    m4.textContent = 'Voiture' + (s.vehicules.length > 1 ? 's' : '') + ' au parking : ' + s.vehicules.map(w => [w.modele, w.couleur].filter(Boolean).join(' ') + ((w.plaque || w.options) ? ' (' + [w.plaque, w.options].filter(Boolean).join(', ') + ')' : '')).join(' ; ');
     c.appendChild(m4);
   }
   if (s.gps) {
@@ -1054,6 +1054,10 @@ async function loadMembres() {
   try {
     membres = await api('membres?select=*&order=nom.asc,prenom.asc');
   } catch (e) { showErr(e.message); return }
+  // Tri alphabetique francais (accents, majuscules) : nom de famille puis prenom
+  membres.sort((a, b) =>
+    (a.nom || '').localeCompare(b.nom || '', 'fr', { sensitivity: 'base' }) ||
+    (a.prenom || '').localeCompare(b.prenom || '', 'fr', { sensitivity: 'base' }));
   [...sel].forEach(i => { if (!membres.some(m => m.id === i)) sel.delete(i) });
   renderParticipants();
   renderMembres();
@@ -1153,7 +1157,9 @@ function majProprioOptions(keep) {
   const q = $('vpro'), pv = keep !== undefined ? keep : q.value;
   q.innerHTML = '<option value="">—</option><option>Le club</option>';
   membres.filter(m => m.actif !== false)
-    .slice().sort((a, b) => (a.prenom + ' ' + a.nom).localeCompare(b.prenom + ' ' + b.nom, 'fr'))
+    .slice().sort((a, b) =>
+      (a.nom || '').localeCompare(b.nom || '', 'fr', { sensitivity: 'base' }) ||
+      (a.prenom || '').localeCompare(b.prenom || '', 'fr', { sensitivity: 'base' }))
     .forEach(m => {
       const o = document.createElement('option');
       o.textContent = m.prenom + ' ' + m.nom;
@@ -1174,9 +1180,9 @@ function renderVehicules() {
     const r = document.createElement('div');
     r.className = 'm';
     const s = document.createElement('span');
-    s.textContent = w.modele + (w.couleur ? ' ' + w.couleur : '');
+    s.textContent = w.modele;
     const sm = document.createElement('small');
-    sm.textContent = ' ' + [w.immatriculation, w.proprietaire].filter(Boolean).join(' — ');
+    sm.textContent = ' ' + [w.immatriculation, w.proprietaire, w.options].filter(Boolean).join(' — ');
     s.appendChild(sm);
     const e = document.createElement('button');
     e.textContent = 'Modifier';
@@ -1184,7 +1190,7 @@ function renderVehicules() {
       editVId = w.id;
       $('vfTitle').textContent = 'Modifier ' + w.modele;
       $('vmod').value = w.modele; $('vimm').value = w.immatriculation || '';
-      $('vcou').value = w.couleur || ''; majProprioOptions(w.proprietaire || '');
+      $('vopt').value = w.options || ''; majProprioOptions(w.proprietaire || '');
       $('addV').textContent = 'Enregistrer';
       $('cancelEditV').classList.remove('hid');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1203,7 +1209,7 @@ function renderVehicules() {
 function resetVForm() {
   editVId = null;
   $('vfTitle').textContent = 'Ajouter un véhicule';
-  ['vmod', 'vimm', 'vcou', 'vpro'].forEach(i => $(i).value = '');
+  ['vmod', 'vimm', 'vopt', 'vpro'].forEach(i => $(i).value = '');
   $('addV').textContent = 'Ajouter le véhicule';
   $('cancelEditV').classList.add('hid');
 }
@@ -1215,7 +1221,7 @@ $('addV').onclick = async () => {
   const body = {
     modele: mod,
     immatriculation: $('vimm').value.trim(),
-    couleur: $('vcou').value.trim(),
+    options: $('vopt').value.trim(),
     proprietaire: $('vpro').value.trim()
   };
   try {
