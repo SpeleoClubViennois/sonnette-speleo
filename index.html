@@ -1010,7 +1010,7 @@ function renderMembres() {
     r.className = 'm';
     const s = document.createElement('span');
     const a = age(m.date_naissance);
-    s.textContent = m.prenom + ' ' + m.nom;
+    s.textContent = m.nom.toUpperCase() + ' ' + m.prenom;
     const sm = document.createElement('small');
     const voit = voituresDe(m);
     sm.textContent = ' ' + (a !== null ? a + ' ans, ' : '') + m.niveau + (m.telephone ? ', ' + m.telephone : '') + (m.callmebot_key ? ', alerte WhatsApp' : '') + (voit.length ? ', ' + voit.map(w => w.modele).join(' + ') : '') + (m.actif === false ? ' — inactif' : '');
